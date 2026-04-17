@@ -6,35 +6,47 @@
 
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { z } = require('zod');
+const { isWithinRange } = require('./locationUtils');
+const { writeAuditLog } = require('./auditService');
 
 // ── Zod Schema: Validates Gemini's JSON output ──────────
 const TriageResultSchema = z.object({
   severity: z.enum(['Critical', 'High', 'Medium', 'Low']),
   briefSummary: z.string().min(5).max(500),
   tacticalAdvice: z.string().min(5).max(500),
-  recommendedTeam: z.enum(['Medical', 'Fire', 'Security', 'All']),
+  assignedTeam: z.enum(['Fire', 'Medical', 'Police', 'Tech-Hazard']),
   estimatedResponseTime: z.number().min(1).max(120),
   riskFactors: z.array(z.string().max(100)).max(5),
 });
 
+// ── Zod Schema: Validates incoming incidents ────────────
+const IncomingIncidentSchema = z.object({
+  incidentId: z.string().optional(),
+  type: z.string(),
+  location: z.any(),
+  contextData: z.string().optional().nullable(),
+  reportedBy: z.any(),
+  assignedTeam: z.enum(['Fire', 'Medical', 'Police', 'Tech-Hazard']).optional(),
+});
+
 // ── Rule-based Fallback Classifier ──────────────────────
 const FALLBACK_RULES = {
-  medical: { severity: 'Critical', recommendedTeam: 'Medical', estimatedResponseTime: 3 },
-  cardiac: { severity: 'Critical', recommendedTeam: 'Medical', estimatedResponseTime: 2 },
-  fire: { severity: 'Critical', recommendedTeam: 'Fire', estimatedResponseTime: 5 },
-  explosion: { severity: 'Critical', recommendedTeam: 'Fire', estimatedResponseTime: 3 },
-  security: { severity: 'High', recommendedTeam: 'Security', estimatedResponseTime: 5 },
-  intrusion: { severity: 'High', recommendedTeam: 'Security', estimatedResponseTime: 5 },
-  breach: { severity: 'High', recommendedTeam: 'Security', estimatedResponseTime: 5 },
-  communication: { severity: 'Medium', recommendedTeam: 'Security', estimatedResponseTime: 15 },
-  outage: { severity: 'Medium', recommendedTeam: 'Security', estimatedResponseTime: 15 },
-  flooding: { severity: 'High', recommendedTeam: 'All', estimatedResponseTime: 10 },
-  earthquake: { severity: 'Critical', recommendedTeam: 'All', estimatedResponseTime: 5 },
+  medical: { severity: 'Critical', assignedTeam: 'Medical', estimatedResponseTime: 3 },
+  cardiac: { severity: 'Critical', assignedTeam: 'Medical', estimatedResponseTime: 2 },
+  fire: { severity: 'Critical', assignedTeam: 'Fire', estimatedResponseTime: 5 },
+  explosion: { severity: 'Critical', assignedTeam: 'Fire', estimatedResponseTime: 3 },
+  security: { severity: 'High', assignedTeam: 'Police', estimatedResponseTime: 5 },
+  intrusion: { severity: 'High', assignedTeam: 'Police', estimatedResponseTime: 5 },
+  breach: { severity: 'High', assignedTeam: 'Police', estimatedResponseTime: 5 },
+  communication: { severity: 'Medium', assignedTeam: 'Tech-Hazard', estimatedResponseTime: 15 },
+  outage: { severity: 'Medium', assignedTeam: 'Tech-Hazard', estimatedResponseTime: 15 },
+  flooding: { severity: 'High', assignedTeam: 'Fire', estimatedResponseTime: 10 },
+  earthquake: { severity: 'Critical', assignedTeam: 'Medical', estimatedResponseTime: 5 },
 };
 
 const DEFAULT_FALLBACK = {
   severity: 'Medium',
-  recommendedTeam: 'Security',
+  assignedTeam: 'Police',
   estimatedResponseTime: 10,
 };
 
@@ -59,8 +71,8 @@ function ruleBasedTriage(type, location) {
   return {
     severity: rule.severity,
     briefSummary: `${type} reported at ${location}. Automated severity assessment applied.`,
-    tacticalAdvice: `Deploy ${rule.recommendedTeam} team to ${location}. Follow standard operating procedure.`,
-    recommendedTeam: rule.recommendedTeam,
+    tacticalAdvice: `Deploy ${rule.assignedTeam} team to ${location}. Follow standard operating procedure.`,
+    assignedTeam: rule.assignedTeam,
     estimatedResponseTime: rule.estimatedResponseTime,
     riskFactors: ['Automated assessment — manual review recommended'],
   };
@@ -75,6 +87,58 @@ function sleep(ms) {
 }
 
 /**
+ * Checks if there are responders within 5km. If not, expands to 10km and logs a warning.
+ * @param {string} incidentId
+ * @param {string} assignedTeam
+ * @param {object} location
+ * @param {import('winston').Logger} logger
+ */
+async function checkResponderProximity(incidentId, assignedTeam, location, logger) {
+  if (!incidentId || !location?.coordinates) return;
+
+  try {
+    // Lazy load to avoid circular dependencies if any
+    const { listResponders } = require('./firestoreService');
+    
+    // In our system, responder locations are stored in the responders collection
+    const responders = await listResponders({ teamType: assignedTeam });
+
+    const within5km = responders.filter(r => 
+      r.currentPosition && isWithinRange(location.coordinates, r.currentPosition, 5)
+    );
+
+    if (within5km.length === 0) {
+      // Expand to 10km
+      const within10km = responders.filter(r => 
+        r.currentPosition && isWithinRange(location.coordinates, r.currentPosition, 10)
+      );
+
+      // Log a 'Delayed Response Warning' to the auditService
+      writeAuditLog(logger, {
+        action: 'DELAYED_RESPONSE_WARNING',
+        actorId: 'system',
+        actorRole: 'system',
+        resourceType: 'incident',
+        resourceId: incidentId,
+        nextState: {
+          expandedRadiusKm: 10,
+          respondersFoundAt10km: within10km.length,
+          assignedTeam
+        }
+      });
+
+      logger.warn('Delayed Response Warning: No responders within 5km', {
+        incidentId,
+        assignedTeam,
+        respondersFoundAt10km: within10km.length
+      });
+    }
+  } catch (error) {
+    logger.error('Proximity check failed', { error: error.message, incidentId });
+  }
+}
+
+/**
  * Triage an incident using Gemini AI with retry logic and Zod validation.
  * Falls back to rule-based classifier if Gemini fails after all retries.
  *
@@ -83,13 +147,19 @@ function sleep(ms) {
  * @param {object} params.location - { sector, coordinates? }
  * @param {string} [params.contextData] - Additional context
  * @param {object} params.reportedBy - { role, name }
+ * @param {string} params.assignedTeam - Required assigned team
  * @param {object} env - Environment config (for API key and model)
  * @param {import('winston').Logger} logger - Winston logger
  * @returns {Promise<{ result: object, model: string }>}
  *   result: validated triage data
  *   model: 'gemini-1.5-flash' or 'rule-based-fallback'
  */
-async function triageIncident({ type, location, contextData, reportedBy }, env, logger) {
+async function triageIncident(params, env, logger) {
+  // Validate incoming incident data
+  IncomingIncidentSchema.parse(params);
+  
+  const { incidentId, type, location, contextData, reportedBy, assignedTeam } = params;
+  
   const MAX_RETRIES = 3;
   const BASE_DELAY_MS = 1000;
 
@@ -115,6 +185,7 @@ INCOMING INCIDENT REPORT:
 - Location/Sector: ${location?.sector || 'Unknown sector'}
 - Coordinates: ${location?.coordinates ? `${location.coordinates.lat}, ${location.coordinates.lng}` : 'Not available'}
 - Reported by: ${reportedBy?.name || 'Anonymous'} (Role: ${reportedBy?.role || 'unknown'})
+- Pre-assigned Team: ${assignedTeam || 'None (Determine from context)'}
 - Additional Context: ${contextData || 'None provided'}
 
 CLASSIFICATION PROTOCOL:
@@ -129,7 +200,7 @@ RESPOND WITH VALID JSON ONLY — no markdown, no explanation:
   "severity": "Critical" | "High" | "Medium" | "Low",
   "briefSummary": "Concise operational summary (max 300 chars)",
   "tacticalAdvice": "Immediate instruction for field teams (max 500 chars)",
-  "recommendedTeam": "Medical" | "Fire" | "Security" | "All",
+  "assignedTeam": "Fire" | "Medical" | "Police" | "Tech-Hazard",
   "estimatedResponseTime": <number 1-120 in minutes>,
   "riskFactors": ["risk1", "risk2"] (max 5 items)
 }`;
@@ -143,9 +214,12 @@ RESPOND WITH VALID JSON ONLY — no markdown, no explanation:
 
       logger.info('Gemini triage successful', {
         severity: validated.severity,
-        recommendedTeam: validated.recommendedTeam,
+        assignedTeam: validated.assignedTeam,
         attempt,
       });
+
+      // Query responder_locations and filter by radius
+      await checkResponderProximity(incidentId, validated.assignedTeam, location, logger);
 
       return {
         result: validated,
@@ -174,6 +248,8 @@ RESPOND WITH VALID JSON ONLY — no markdown, no explanation:
   });
 
   const fallbackResult = ruleBasedTriage(type, location?.sector || 'Unknown');
+  
+  await checkResponderProximity(incidentId, fallbackResult.assignedTeam, location, logger);
 
   return {
     result: fallbackResult,

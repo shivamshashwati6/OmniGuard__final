@@ -139,9 +139,18 @@ async function bootstrap() {
   );
 
   // 6d. CORS
+  const allowedOrigins = env.FRONTEND_ORIGIN.split(',').map(o => o.trim());
   app.use(
     cors({
-      origin: env.FRONTEND_ORIGIN,
+      origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        // Allow any localhost port during development
+        if (env.NODE_ENV !== 'production' && origin.startsWith('http://localhost:')) {
+          return callback(null, true);
+        }
+        callback(new Error('Not allowed by CORS'));
+      },
       methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
       exposedHeaders: ['X-Request-ID'],
@@ -173,13 +182,9 @@ async function bootstrap() {
 
   // WebSocket health endpoint (coordinator only, but no auth for simplicity)
   app.get('/api/ws/health', (req, res) => {
-    res.json({
-      success: true,
-      data: {
-        activeConnections: wsService.getConnectionCount(),
-        connectionsByRole: wsService.getConnectionSummary(),
-        timestamp: new Date().toISOString(),
-      },
+    sendSuccess(res, {
+      activeConnections: wsService.getConnectionCount(),
+      connectionsByRole: wsService.getConnectionSummary(),
     });
   });
 

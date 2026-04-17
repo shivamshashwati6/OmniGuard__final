@@ -1,0 +1,58 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "incidents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "softDeleted", "order": "ASCENDING" },
+        { "fieldPath": "createdAt",   "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "incidents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "softDeleted",  "order": "ASCENDING" },
+        { "fieldPath": "status",       "order": "ASCENDING" },
+        { "fieldPath": "createdAt",    "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "incidents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "softDeleted",  "order": "ASCENDING" },
+        { "fieldPath": "severity",     "order": "ASCENDING" },
+        { "fieldPath": "createdAt",    "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "incidents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "softDeleted",  "order": "ASCENDING" },
+        { "fieldPath": "assignedTeam", "order": "ASCENDING" },
+        { "fieldPath": "createdAt",    "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "incidents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "softDeleted",  "order": "ASCENDING" },
+        { "fieldPath": "assignedTeam", "order": "ASCENDING" },
+        { "fieldPath": "status",       "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "incidents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "softDeleted",       "order": "ASCENDING" },
+        { "fieldPath": "reportedBy.userId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt",         "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

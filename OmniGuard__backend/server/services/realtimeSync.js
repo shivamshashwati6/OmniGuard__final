@@ -5,7 +5,11 @@
  * regardless of which API endpoint triggered the change.
  */
 
-const { subscribeToIncidents } = require('./firestoreService');
+const { subscribeToIncidents, listResponders } = require('./firestoreService');
+const { getTeamStats, getGlobalStats } = require('./statsService');
+const { calculateDistance } = require('./locationUtils');
+
+const notifiedNearbyIncidents = new Set();
 
 /**
  * Start real-time Firestore → WebSocket synchronization.
@@ -42,8 +46,71 @@ function startRealtimeSync(wsService, logger) {
       });
     }
 
-    // Broadcast the change to all connected clients
-    // (deleted events go to coordinators only)
+    // Check if the incident was closed
+    if (changeType === 'modified' && incidentData.status === 'Closed') {
+      if (incidentData.assignedTeam) {
+        wsService.broadcastToTeam(incidentData.assignedTeam, 'INCIDENT_CLOSED', {
+          incidentId: incidentData.id,
+          assignedTeam: incidentData.assignedTeam,
+          source: 'firestore-sync',
+        });
+      }
+    }
+
+    // Check for NEW_INCIDENT_NEARBY: Push to responders within 5km when an incident becomes active
+    if ((changeType === 'added' || changeType === 'modified') && incidentData.status === 'active' && incidentData.assignedTeam && incidentData.location?.coordinates) {
+      if (!notifiedNearbyIncidents.has(incidentData.id)) {
+        notifiedNearbyIncidents.add(incidentData.id);
+
+        listResponders({ teamType: incidentData.assignedTeam }).then(responders => {
+          responders.forEach(responder => {
+            if (responder.currentPosition) {
+              const distance = calculateDistance(incidentData.location.coordinates, responder.currentPosition);
+              if (distance !== null && distance <= 5) {
+                wsService.sendToUser(responder.id, 'NEW_INCIDENT_NEARBY', {
+                  incidentId: incidentData.id,
+                  incidentNumber: incidentData.incidentNumber,
+                  type: incidentData.type,
+                  severity: incidentData.severity,
+                  distance: parseFloat(distance.toFixed(2)),
+                  source: 'firestore-sync'
+                });
+              }
+            }
+          });
+        }).catch(err => logger.error('Failed to push NEW_INCIDENT_NEARBY:', err));
+      }
+    }
+
+    // Emit team stats whenever an incident is added, modified, or removed
+    if (incidentData.assignedTeam) {
+      getTeamStats(incidentData.assignedTeam).then(stats => {
+        wsService.broadcastToTeam(incidentData.assignedTeam, 'TEAM_STATS_UPDATED', {
+          teamId: incidentData.assignedTeam,
+          stats,
+          source: 'firestore-sync'
+        });
+      }).catch(err => {
+        logger.error(`Failed to update team stats for ${incidentData.assignedTeam}:`, err);
+      });
+    }
+
+    // Always emit global stats for admins/coordinators on any change
+    getGlobalStats().then(stats => {
+      wsService.broadcastToRole('coordinator', 'GLOBAL_STATS_UPDATED', {
+        stats,
+        source: 'firestore-sync'
+      });
+      wsService.broadcastToRole('admin', 'GLOBAL_STATS_UPDATED', {
+        stats,
+        source: 'firestore-sync'
+      });
+    }).catch(err => {
+      logger.error('Failed to update global stats:', err);
+    });
+
+    // Broadcast the change
+    // Deleted events go to coordinators only.
     if (changeType === 'removed') {
       wsService.broadcastToRole('coordinator', event, {
         incidentId: incidentData.id,
@@ -51,11 +118,21 @@ function startRealtimeSync(wsService, logger) {
         source: 'firestore-sync',
       });
     } else {
-      wsService.broadcast(event, {
-        incident: incidentData,
-        changeType,
-        source: 'firestore-sync',
-      });
+      // Only call broadcastToTeam(teamId, data) as requested, avoiding a global broadcast
+      if (incidentData.assignedTeam) {
+        wsService.broadcastToTeam(incidentData.assignedTeam, event, {
+          incident: incidentData,
+          changeType,
+          source: 'firestore-sync',
+        });
+      } else {
+        // Fallback for incidents without an assigned team
+        wsService.broadcast(event, {
+          incident: incidentData,
+          changeType,
+          source: 'firestore-sync',
+        });
+      }
     }
 
     logger.debug(`Firestore sync: ${event}`, {

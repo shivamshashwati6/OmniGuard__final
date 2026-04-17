@@ -41,13 +41,30 @@ async function login(req, res, next) {
       throw new AuthenticationError('Invalid email or password');
     }
 
+    let assignedTeam = user.assignedTeam || user.responderTeam;
+    
+    // If not found in user doc and user is a responder, try fetching from responders collection
+    if (!assignedTeam && user.role === 'responder') {
+      try {
+        const { getResponderById } = require('../services/firestoreService');
+        const responder = await getResponderById(user.id);
+        if (responder) {
+          assignedTeam = responder.assignedTeam || responder.teamType;
+        }
+      } catch (err) {
+        // Ignore if not found
+      }
+    }
+
     // Generate access token
     const accessToken = jwt.sign(
       {
+        uid: user.id,
         userId: user.id,
         email: user.email,
         role: user.role,
         name: user.name,
+        assignedTeam: assignedTeam,
       },
       env.JWT_SECRET,
       {
@@ -61,6 +78,7 @@ async function login(req, res, next) {
     // Generate refresh token
     const refreshToken = jwt.sign(
       {
+        uid: user.id,
         userId: user.id,
         tokenType: 'refresh',
       },
@@ -133,20 +151,35 @@ async function refresh(req, res, next) {
     }
 
     // Look up user to get current role/info (may have changed since token was issued)
-    const { getUserById } = require('../services/firestoreService');
-    const user = await getUserById(decoded.userId);
+    const { getUserById, getResponderById } = require('../services/firestoreService');
+    const user = await getUserById(decoded.userId || decoded.uid);
 
     if (!user || !user.isActive) {
       throw new AuthenticationError('User account not found or deactivated');
     }
 
+    let assignedTeam = user.assignedTeam || user.responderTeam;
+    
+    if (!assignedTeam && user.role === 'responder') {
+      try {
+        const responder = await getResponderById(user.id);
+        if (responder) {
+          assignedTeam = responder.assignedTeam || responder.teamType;
+        }
+      } catch (err) {
+        // Ignore if not found
+      }
+    }
+
     // Issue new token pair
     const newAccessToken = jwt.sign(
       {
+        uid: user.id,
         userId: user.id,
         email: user.email,
         role: user.role,
         name: user.name,
+        assignedTeam: assignedTeam,
       },
       env.JWT_SECRET,
       {
@@ -159,6 +192,7 @@ async function refresh(req, res, next) {
 
     const newRefreshToken = jwt.sign(
       {
+        uid: user.id,
         userId: user.id,
         tokenType: 'refresh',
       },

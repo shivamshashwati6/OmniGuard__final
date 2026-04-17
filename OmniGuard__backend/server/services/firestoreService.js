@@ -63,6 +63,7 @@ async function getIncidentById(incidentId) {
  * @param {string} [options.status] - Filter by status
  * @param {string} [options.severity] - Filter by severity
  * @param {string} [options.reportedByUserId] - Filter by reporter (for civilian-only access)
+ * @param {string} [options.assignedTeam] - Filter by assigned team (for responders)
  * @param {number} [options.page=1] - Page number
  * @param {number} [options.limit=20] - Items per page
  * @param {string} [options.sortBy='createdAt'] - Sort field
@@ -75,6 +76,7 @@ async function listIncidents(options = {}) {
     status,
     severity,
     reportedByUserId,
+    assignedTeam,
     page = 1,
     limit = 20,
     sortBy = 'createdAt',
@@ -93,6 +95,10 @@ async function listIncidents(options = {}) {
 
   if (reportedByUserId) {
     query = query.where('reportedBy.userId', '==', reportedByUserId);
+  }
+
+  if (assignedTeam) {
+    query = query.where('assignedTeam', '==', assignedTeam);
   }
 
   // Get total count (Firestore doesn't have native count in older SDK, so we fetch all IDs)
@@ -133,12 +139,41 @@ async function listIncidents(options = {}) {
 }
 
 /**
+ * Get threat statistics for a specific team.
+ * @param {string} teamId
+ * @returns {Promise<{ active: number, closed: number }>}
+ */
+async function getTeamStats(teamId) {
+  const db = getDb();
+  
+  const activeSnapshot = await db.collection(COLLECTIONS.INCIDENTS)
+    .where('softDeleted', '==', false)
+    .where('assignedTeam', '==', teamId)
+    .where('status', '==', 'active')
+    .select()
+    .get();
+    
+  const closedSnapshot = await db.collection(COLLECTIONS.INCIDENTS)
+    .where('softDeleted', '==', false)
+    .where('assignedTeam', '==', teamId)
+    .where('status', '==', 'Closed')
+    .select()
+    .get();
+
+  return {
+    active: activeSnapshot.size,
+    closed: closedSnapshot.size
+  };
+}
+
+/**
  * Update an incident's status.
  * @param {string} incidentId
  * @param {string} newStatus
+ * @param {string} [assignedTeam]
  * @returns {Promise<object>} Updated incident
  */
-async function updateIncidentStatus(incidentId, newStatus) {
+async function updateIncidentStatus(incidentId, newStatus, assignedTeam) {
   const db = getDb();
   const docRef = db.collection(COLLECTIONS.INCIDENTS).doc(incidentId);
   const doc = await docRef.get();
@@ -149,14 +184,20 @@ async function updateIncidentStatus(incidentId, newStatus) {
 
   const previousState = doc.data();
 
-  await docRef.update({
+  const updateData = {
     status: newStatus,
     updatedAt: new Date(),
-  });
+  };
+
+  if (assignedTeam) {
+    updateData.assignedTeam = assignedTeam;
+  }
+
+  await docRef.update(updateData);
 
   return {
     previousState,
-    updated: { id: doc.id, ...doc.data(), status: newStatus, updatedAt: new Date() },
+    updated: { id: doc.id, ...doc.data(), ...updateData },
   };
 }
 
@@ -176,7 +217,8 @@ async function updateIncidentTriage(incidentId, triageData) {
       processedAt: new Date(),
     },
     severity: triageData.severity,
-    status: 'Triaged',
+    assignedTeam: triageData.assignedTeam,
+    status: 'active',
     updatedAt: new Date(),
   });
 
@@ -224,7 +266,7 @@ async function activateSOS(incidentId) {
 
   await docRef.update({
     sosActive: true,
-    status: 'Dispatching',
+    status: 'active',
     updatedAt: new Date(),
   });
 
@@ -463,6 +505,7 @@ module.exports = {
   createIncident,
   getIncidentById,
   listIncidents,
+  getTeamStats,
   updateIncidentStatus,
   updateIncidentTriage,
   softDeleteIncident,

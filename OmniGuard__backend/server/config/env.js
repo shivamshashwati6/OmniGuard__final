@@ -10,7 +10,7 @@ const envSchema = z.object({
   // Server
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3001),
-  FRONTEND_ORIGIN: z.string().url().default('http://localhost:5173'),
+  FRONTEND_ORIGIN: z.string().default('http://localhost:5173,http://localhost:5174'),
 
   // JWT
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),

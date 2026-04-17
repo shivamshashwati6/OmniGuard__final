@@ -33,10 +33,12 @@ function createAuthMiddleware(env) {
 
       // Attach user payload to request object
       req.user = {
-        userId: decoded.userId,
+        uid: decoded.uid || decoded.userId,
+        userId: decoded.userId, // keep for backward compatibility
         email: decoded.email,
         role: decoded.role,
         name: decoded.name,
+        assignedTeam: decoded.assignedTeam || decoded.responderTeam,
       };
 
       next();

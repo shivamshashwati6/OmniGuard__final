@@ -42,26 +42,26 @@ describe('TriageService', () => {
     it('should classify medical emergencies as Critical', () => {
       const result = ruleBasedTriage('Medical Emergency', 'North Alpha Sector');
       expect(result.severity).toBe('Critical');
-      expect(result.recommendedTeam).toBe('Medical');
+      expect(result.assignedTeam).toBe('Medical');
       expect(result.estimatedResponseTime).toBe(3);
     });
 
     it('should classify fire alarms as Critical', () => {
       const result = ruleBasedTriage('Fire Alarm Triggered', 'Kitchen Annex');
       expect(result.severity).toBe('Critical');
-      expect(result.recommendedTeam).toBe('Fire');
+      expect(result.assignedTeam).toBe('Fire');
     });
 
     it('should classify security breaches as High', () => {
       const result = ruleBasedTriage('Security Breach', 'Perimeter Gate 2');
       expect(result.severity).toBe('High');
-      expect(result.recommendedTeam).toBe('Security');
+      expect(result.assignedTeam).toBe('Police');
     });
 
     it('should classify unknown types as Medium/Security', () => {
       const result = ruleBasedTriage('Strange Noise', 'Lobby');
       expect(result.severity).toBe('Medium');
-      expect(result.recommendedTeam).toBe('Security');
+      expect(result.assignedTeam).toBe('Police');
     });
 
     it('should include location in summary', () => {
@@ -82,7 +82,7 @@ describe('TriageService', () => {
       severity: 'High',
       briefSummary: 'Medical emergency in gym area requiring immediate attention',
       tacticalAdvice: 'Deploy medical team with AED equipment to gym zone L1',
-      recommendedTeam: 'Medical',
+      assignedTeam: 'Medical',
       estimatedResponseTime: 5,
       riskFactors: ['Possible cardiac event', 'Crowded area'],
     };
@@ -104,7 +104,7 @@ describe('TriageService', () => {
 
       expect(model).toBe('gemini-1.5-flash');
       expect(result.severity).toBe('High');
-      expect(result.recommendedTeam).toBe('Medical');
+      expect(result.assignedTeam).toBe('Medical');
     });
 
     it('should fall back to rule-based on Gemini failure', async () => {
@@ -122,7 +122,7 @@ describe('TriageService', () => {
 
       expect(model).toBe('rule-based-fallback');
       expect(result.severity).toBe('Critical');
-      expect(result.recommendedTeam).toBe('Fire');
+      expect(result.assignedTeam).toBe('Fire');
     });
 
     it('should fall back on invalid Gemini JSON output', async () => {
@@ -170,7 +170,7 @@ describe('TriageService', () => {
         severity: 'Critical',
         briefSummary: 'Fire detected in kitchen',
         tacticalAdvice: 'Evacuate and deploy fire team',
-        recommendedTeam: 'Fire',
+        assignedTeam: 'Fire',
         estimatedResponseTime: 5,
         riskFactors: ['Smoke inhalation risk'],
       };
@@ -182,7 +182,7 @@ describe('TriageService', () => {
         severity: 'EXTREME',
         briefSummary: 'Test',
         tacticalAdvice: 'Test',
-        recommendedTeam: 'Fire',
+        assignedTeam: 'Fire',
         estimatedResponseTime: 5,
         riskFactors: [],
       };
@@ -194,7 +194,7 @@ describe('TriageService', () => {
         severity: 'Low',
         briefSummary: 'Test summary',
         tacticalAdvice: 'Test advice',
-        recommendedTeam: 'Security',
+        assignedTeam: 'Security',
         estimatedResponseTime: 200,
         riskFactors: [],
       };

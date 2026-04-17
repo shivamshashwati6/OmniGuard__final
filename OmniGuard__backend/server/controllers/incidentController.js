@@ -16,6 +16,7 @@ const {
 } = require('../services/firestoreService');
 const { triageIncident } = require('../services/triageService');
 const { writeAuditLog } = require('../services/auditService');
+const { getIncidentStats } = require('../services/statsService');
 const { sendSuccess, sendPaginated } = require('../utils/response');
 const { NotFoundError, ValidationError } = require('../utils/errors');
 
@@ -48,9 +49,16 @@ async function list(req, res, next) {
       sortOrder: sortOrder === 'asc' ? 'asc' : 'desc',
     };
 
+    // Admins have no filters, they see all incidents
+    
     // Civilians can only see their own incidents
     if (req.user.role === 'civilian') {
-      options.reportedByUserId = req.user.userId;
+      options.reportedByUserId = req.user.uid || req.user.userId;
+    }
+
+    // Responders can only see incidents assigned to their team
+    if (req.user.role === 'responder' && (req.user.assignedTeam || req.user.responderTeam)) {
+      options.assignedTeam = req.user.assignedTeam || req.user.responderTeam;
     }
 
     const { incidents, total } = await listIncidents(options);
@@ -75,11 +83,37 @@ async function getById(req, res, next) {
     const incident = await getIncidentById(req.params.id);
 
     // Ownership check for civilians
-    if (req.user.role === 'civilian' && incident.reportedBy?.userId !== req.user.userId) {
+    if (req.user.role === 'civilian' && incident.reportedBy?.userId !== (req.user.uid || req.user.userId)) {
       throw new NotFoundError('Incident');
     }
 
+    // Responders can only see incidents assigned to their team
+    if (req.user.role === 'responder' && incident.assignedTeam !== (req.user.assignedTeam || req.user.responderTeam)) {
+      throw new NotFoundError('Incident');
+    }
+
+    // Status Check: 'Closed' threats are only visible to the team that handled them and admins/coordinators
+    if (incident.status === 'Closed' || incident.status === 'closed') {
+      if (req.user.role === 'civilian') {
+         throw new NotFoundError('Incident');
+      }
+    }
+
     sendSuccess(res, incident);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/incidents/stats
+ * Get 'Active' and 'Closed' counts. 
+ * Responder: only their assignedTeam. Admin: global across all teams.
+ */
+async function getStats(req, res, next) {
+  try {
+    const stats = await getIncidentStats(req.user);
+    sendSuccess(res, stats);
   } catch (error) {
     next(error);
   }
@@ -92,7 +126,7 @@ async function getById(req, res, next) {
  */
 async function create(req, res, next) {
   try {
-    const { type, location, description } = req.body;
+    const { type, location, description, assignedTeam } = req.body;
     const logger = req.app.locals.logger;
     const env = req.app.locals.env;
 
@@ -108,11 +142,11 @@ async function create(req, res, next) {
       severity: 'Medium', // Temporary — will be updated by triage
       status: 'Reported',
       reportedBy: {
-        userId: req.user.userId,
+        userId: req.user.uid || req.user.userId,
         role: req.user.role,
         name: req.user.name,
       },
-      assignedTeam: null,
+      assignedTeam: assignedTeam,
       triage: null,
       sosActive: false,
       description: description || null,
@@ -144,10 +178,12 @@ async function create(req, res, next) {
     // Trigger async Gemini triage (non-blocking)
     triageIncident(
       {
+        incidentId: incident.id,
         type,
         location: incidentData.location,
         contextData: description,
         reportedBy: { role: req.user.role, name: req.user.name },
+        assignedTeam: assignedTeam,
       },
       env,
       logger
@@ -198,7 +234,7 @@ async function create(req, res, next) {
  */
 async function updateStatus(req, res, next) {
   try {
-    const { status } = req.body;
+    const { status, assignedTeam } = req.body;
     const logger = req.app.locals.logger;
 
     if (!status || !VALID_STATUSES.includes(status)) {
@@ -215,7 +251,7 @@ async function updateStatus(req, res, next) {
       );
     }
 
-    const { previousState, updated } = await updateIncidentStatus(req.params.id, status);
+    const { previousState, updated } = await updateIncidentStatus(req.params.id, status, assignedTeam);
 
     logger.info('Incident status updated', {
       requestId: req.requestId,
@@ -234,8 +270,8 @@ async function updateStatus(req, res, next) {
       resourceId: req.params.id,
       requestId: req.requestId,
       ipAddress: req.ip,
-      previousState: { status: previousState.status },
-      nextState: { status },
+      previousState: { status: previousState.status, assignedTeam: previousState.assignedTeam },
+      nextState: { status, assignedTeam: updated.assignedTeam },
     });
 
     // WebSocket broadcast
@@ -245,6 +281,7 @@ async function updateStatus(req, res, next) {
         incidentId: req.params.id,
         previousStatus: previousState.status,
         newStatus: status,
+        assignedTeam: updated.assignedTeam,
         updatedBy: req.user.name,
       });
     }
@@ -350,12 +387,48 @@ async function triggerSOS(req, res, next) {
   }
 }
 
+/**
+ * PATCH /api/incidents/:id/close
+ * Close an incident. Update status to 'Closed' and log the event.
+ */
+async function closeIncident(req, res, next) {
+  try {
+    const logger = req.app.locals.logger;
+
+    const { previousState, updated } = await updateIncidentStatus(req.params.id, 'Closed');
+
+    logger.info('Incident closed', {
+      requestId: req.requestId,
+      incidentId: req.params.id,
+      closedBy: req.user.userId,
+    });
+
+    writeAuditLog(logger, {
+      action: 'INCIDENT_CLOSED',
+      actorId: req.user.userId,
+      actorRole: req.user.role,
+      resourceType: 'incident',
+      resourceId: req.params.id,
+      requestId: req.requestId,
+      ipAddress: req.ip,
+      previousState: { status: previousState.status },
+      nextState: { status: 'Closed' },
+    });
+
+    sendSuccess(res, updated);
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   list,
   getById,
+  getStats,
   create,
   updateStatus,
   remove,
   triggerSOS,
+  closeIncident,
   VALID_STATUSES,
 };

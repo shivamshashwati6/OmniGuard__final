@@ -12,27 +12,34 @@ const crypto = require('crypto');
 const { loadEnv } = require('../config/env');
 const { initFirebase, getDb } = require('../config/firebase');
 
+if (process.env.NODE_ENV === 'production') {
+  console.log('Safety Abort: Database seeding is disabled in production environments.');
+  process.exit(1);
+}
+
 const USERS = [
   {
-    email: 'coordinator@omniguard.io',
-    name: 'Commander Alpha',
+    email: 'admin@omniguard.test',
+    name: 'Test Admin',
     role: 'coordinator',
-    password: 'omni2024!',  // Will be hashed
-    nodeId: 'NODE-ALPHA-1',
+    password: 'OmniTest2026!',
+    nodeId: 'NODE-ADMIN-1',
   },
   {
-    email: 'responder1@omniguard.io',
-    name: 'SDRF Alpha Lead',
+    email: 'fire_lead@omniguard.test',
+    name: 'Fire Lead Unit',
     role: 'responder',
-    password: 'resp2024!',
-    nodeId: 'NODE-RESP-1',
+    password: 'FirePass123',
+    assignedTeam: 'Fire',
+    nodeId: 'NODE-FIRE-1',
   },
   {
-    email: 'civilian@omniguard.io',
-    name: 'Field Reporter',
-    role: 'civilian',
-    password: 'civ2024!',
-    nodeId: 'NODE-CIV-1',
+    email: 'med_unit1@omniguard.test',
+    name: 'Medical Unit 1',
+    role: 'responder',
+    password: 'MedPass123',
+    assignedTeam: 'Medical',
+    nodeId: 'NODE-MED-1',
   },
 ];
 
@@ -100,9 +107,9 @@ async function seed() {
   }
 
   console.log('\n✔ Seed complete. Test credentials:');
-  console.log('  coordinator@omniguard.io / omni2024!');
-  console.log('  responder1@omniguard.io  / resp2024!');
-  console.log('  civilian@omniguard.io    / civ2024!');
+  console.log('  admin@omniguard.test       / OmniTest2026!');
+  console.log('  fire_lead@omniguard.test   / FirePass123');
+  console.log('  med_unit1@omniguard.test   / MedPass123');
   console.log('');
 
   process.exit(0);

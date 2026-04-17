@@ -22,6 +22,19 @@ function createWsService(server, env, logger) {
 
   // Map of authenticated connections: ws -> { userId, role, name }
   const clients = new Map();
+  // Map of rooms (teamId -> Set of WebSockets)
+  const rooms = new Map();
+
+  function subscribe(ws, room) {
+    if (!rooms.has(room)) {
+      rooms.set(room, new Set());
+    }
+    rooms.get(room).add(ws);
+  }
+
+  function unsubscribeAll(ws) {
+    rooms.forEach(clientsSet => clientsSet.delete(ws));
+  }
 
   // ── Connection Handler ──────────────────────────────────
   wss.on('connection', (ws, req) => {
@@ -50,13 +63,25 @@ function createWsService(server, env, logger) {
     }
 
     // Store authenticated client
+    const assignedTeam = decoded.assignedTeam || decoded.responderTeam;
     const clientInfo = {
-      userId: decoded.userId,
+      userId: decoded.uid || decoded.userId,
       role: decoded.role,
       name: decoded.name,
+      assignedTeam: assignedTeam,
+      responderTeam: assignedTeam, // legacy fallback
       connectedAt: new Date().toISOString(),
     };
     clients.set(ws, clientInfo);
+
+    // Channel-based communication: Subscribe client to their team room
+    if (assignedTeam) {
+      subscribe(ws, assignedTeam);
+    }
+    // Coordinators are subscribed to a special 'coordinator' room
+    if (decoded.role === 'coordinator' || decoded.role === 'admin') {
+      subscribe(ws, 'coordinator');
+    }
 
     logger.info('WebSocket client connected', {
       userId: decoded.userId,
@@ -90,6 +115,7 @@ function createWsService(server, env, logger) {
 
     // ── Disconnect Handler ─────────────────────────────
     ws.on('close', (code, reason) => {
+      unsubscribeAll(ws);
       clients.delete(ws);
       logger.info('WebSocket client disconnected', {
         userId: clientInfo.userId,
@@ -104,6 +130,7 @@ function createWsService(server, env, logger) {
         userId: clientInfo.userId,
         error: err.message,
       });
+      unsubscribeAll(ws);
       clients.delete(ws);
     });
   });
@@ -116,6 +143,7 @@ function createWsService(server, env, logger) {
         if (clientInfo) {
           logger.info('Terminating stale WebSocket', { userId: clientInfo.userId });
         }
+        unsubscribeAll(ws);
         clients.delete(ws);
         return ws.terminate();
       }
@@ -194,6 +222,52 @@ function createWsService(server, env, logger) {
   }
 
   /**
+   * Broadcast an event to clients with a specific team (channel).
+   * @param {string} team - Target team channel
+   * @param {string} event - Event name
+   * @param {object} payload - Event data
+   */
+  function broadcastToTeam(team, event, payload) {
+    const message = JSON.stringify({
+      event,
+      payload,
+      timestamp: new Date().toISOString(),
+    });
+
+    let sent = 0;
+    
+    // Send to team room
+    const teamSubscribers = rooms.get(team) || new Set();
+    teamSubscribers.forEach((ws) => {
+      const clientInfo = clients.get(ws);
+      // Security Audit: Check recipient's team ID before emitting the event
+      if (clientInfo && (clientInfo.assignedTeam === team || clientInfo.responderTeam === team)) {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(message);
+          sent++;
+        }
+      }
+    });
+
+    // Also send to coordinators, as they need to oversee all teams
+    const coordinatorSubscribers = rooms.get('coordinator') || new Set();
+    coordinatorSubscribers.forEach((ws) => {
+      // Don't double-send if they are somehow in both
+      if (teamSubscribers.has(ws)) return; 
+      
+      const clientInfo = clients.get(ws);
+      if (clientInfo && (clientInfo.role === 'coordinator' || clientInfo.role === 'admin')) {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(message);
+          sent++;
+        }
+      }
+    });
+
+    logger.debug(`WS team channel broadcast: ${event} → ${team}`, { recipients: sent });
+  }
+
+  /**
    * Send an event to a specific user by userId.
    * @param {string} userId - Target user ID
    * @param {string} event - Event name
@@ -267,6 +341,7 @@ function createWsService(server, env, logger) {
   return {
     broadcast,
     broadcastToRole,
+    broadcastToTeam,
     sendToUser,
     sendToClient,
     getConnectionCount,

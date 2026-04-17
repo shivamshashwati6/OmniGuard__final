@@ -16,6 +16,7 @@ const router = express.Router();
 
 const createIncidentSchema = z.object({
   type: z.string().min(3, 'Incident type must be at least 3 characters').max(100),
+  assignedTeam: z.enum(['Fire', 'Medical', 'Police', 'Tech-Hazard']).optional(),
   location: z.union([
     z.string().min(1),
     z.object({
@@ -31,7 +32,8 @@ const createIncidentSchema = z.object({
 });
 
 const updateStatusSchema = z.object({
-  status: z.string().min(1, 'Status is required'),
+  status: z.enum(['active', 'closed', 'Closed', 'Reported', 'Triaged', 'Dispatching', 'En Route', 'On Scene', 'Resolved']),
+  assignedTeam: z.enum(['Fire', 'Medical', 'Police', 'Tech-Hazard']).optional(),
 });
 
 // ── Route Registration ──────────────────────────────────
@@ -43,6 +45,12 @@ const updateStatusSchema = z.object({
  * All authenticated users (civilians see own only — controlled in controller).
  */
 router.get('/', incidentController.list);
+
+/**
+ * GET /api/incidents/stats
+ * Stats for active and closed incidents based on role.
+ */
+router.get('/stats', incidentController.getStats);
 
 /**
  * GET /api/incidents/:id
@@ -76,9 +84,19 @@ router.patch(
 router.delete('/:id', requireRole('coordinator'), incidentController.remove);
 
 /**
- * POST /api/incidents/:id/sos
+ * PATCH /api/incidents/:id/sos
  * Trigger global SOS alert. Any authenticated user.
  */
 router.post('/:id/sos', incidentController.triggerSOS);
+
+/**
+ * PATCH /api/incidents/:id/close
+ * Close an incident.
+ */
+router.patch(
+  '/:id/close',
+  requireRole('coordinator', 'responder'),
+  incidentController.closeIncident
+);
 
 module.exports = router;

@@ -43,8 +43,9 @@ function createWsService(server, env, logger) {
 
     // Authenticate the WebSocket connection via JWT
     if (!token) {
-      logger.warn('WebSocket connection rejected — no token', {
-        ip: req.socket.remoteAddress,
+      logger.warn('WebSocket connection rejected — no token found in query or headers', {
+        url: req.url,
+        headers: req.headers,
       });
       ws.close(4001, 'Authentication required');
       return;
@@ -53,10 +54,11 @@ function createWsService(server, env, logger) {
     let decoded;
     try {
       decoded = jwt.verify(token, env.JWT_SECRET, { algorithms: ['HS256'] });
+      logger.info('WebSocket JWT verified successfully', { userId: decoded.userId || decoded.uid });
     } catch (err) {
-      logger.warn('WebSocket connection rejected — invalid token', {
-        ip: req.socket.remoteAddress,
+      logger.warn('WebSocket connection rejected — JWT verification failed', {
         error: err.message,
+        tokenPrefix: token ? (token.substring(0, 10) + '...') : 'null',
       });
       ws.close(4002, 'Invalid or expired token');
       return;

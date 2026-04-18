@@ -9,7 +9,9 @@ export default function CivilianStatus({ incidents = [] }) {
     status: inc.status,
     time: 'Just now', // Could be formatted from inc.createdAt
     priority: inc.severity || 'Medium',
-    sector: inc.location?.sector || inc.location || 'Unknown Location'
+    sector: typeof inc.location === 'string' 
+      ? inc.location 
+      : (inc.location?.sector || (inc.location?.address ? inc.location.address : 'Target Coordinates'))
   }));
 
   return (

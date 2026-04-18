@@ -9,8 +9,8 @@ const { z } = require('zod');
 const envSchema = z.object({
   // Server
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.coerce.number().int().min(1).max(65535).default(3001),
-  FRONTEND_ORIGIN: z.string().default('http://localhost:5173,http://localhost:5174'),
+  PORT: z.coerce.number().int().min(1).max(65535).default(7860),
+  FRONTEND_ORIGIN: z.string().default('https://omniguard-web.vercel.app,https://omniguard-suite.vercel.app,http://localhost:5173'),
 
   // JWT
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),

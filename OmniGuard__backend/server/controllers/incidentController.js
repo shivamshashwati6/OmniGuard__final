@@ -135,9 +135,9 @@ async function create(req, res, next) {
       incidentNumber: generateIncidentNumber(),
       type,
       location: {
-        sector: location?.sector || location || 'Unknown',
-        coordinates: location?.coordinates || null,
-        address: location?.address || null,
+        sector: typeof location === 'string' ? location : (location?.sector || 'G-Sector Alpha'),
+        coordinates: location?.coordinates || (location?.lat ? { lat: location.lat, lng: location.lng } : null),
+        address: location?.address || (typeof location === 'string' ? null : null),
       },
       severity: 'Medium', // Temporary — will be updated by triage
       status: 'Reported',

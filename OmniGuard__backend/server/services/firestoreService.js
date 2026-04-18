@@ -46,9 +46,23 @@ async function createIncident(incidentData) {
  * @returns {Promise<object>}
  * @throws {NotFoundError} If incident not found or soft-deleted
  */
-async function getIncidentById(incidentId) {
+async function getIncidentById(idOrNumber) {
   const db = getDb();
-  const doc = await db.collection(COLLECTIONS.INCIDENTS).doc(incidentId).get();
+  
+  // 1. Try direct Firestore Doc ID lookup (fastest)
+  let doc = await db.collection(COLLECTIONS.INCIDENTS).doc(idOrNumber).get();
+
+  // 2. Fallback: Search by incidentNumber (e.g., INC-772)
+  if (!doc.exists) {
+    const snapshot = await db.collection(COLLECTIONS.INCIDENTS)
+      .where('incidentNumber', '==', idOrNumber)
+      .limit(1)
+      .get();
+    
+    if (!snapshot.empty) {
+      doc = snapshot.docs[0];
+    }
+  }
 
   if (!doc.exists || doc.data().softDeleted) {
     throw new NotFoundError('Incident');
@@ -173,16 +187,12 @@ async function getTeamStats(teamId) {
  * @param {string} [assignedTeam]
  * @returns {Promise<object>} Updated incident
  */
-async function updateIncidentStatus(incidentId, newStatus, assignedTeam) {
+async function updateIncidentStatus(idOrNumber, newStatus, assignedTeam) {
+  const incident = await getIncidentById(idOrNumber);
   const db = getDb();
-  const docRef = db.collection(COLLECTIONS.INCIDENTS).doc(incidentId);
-  const doc = await docRef.get();
+  const docRef = db.collection(COLLECTIONS.INCIDENTS).doc(incident.id);
 
-  if (!doc.exists || doc.data().softDeleted) {
-    throw new NotFoundError('Incident');
-  }
-
-  const previousState = doc.data();
+  const previousState = { ...incident };
 
   const updateData = {
     status: newStatus,
@@ -197,7 +207,7 @@ async function updateIncidentStatus(incidentId, newStatus, assignedTeam) {
 
   return {
     previousState,
-    updated: { id: doc.id, ...doc.data(), ...updateData },
+    updated: { ...incident, ...updateData },
   };
 }
 
@@ -231,16 +241,12 @@ async function updateIncidentTriage(incidentId, triageData) {
  * @param {string} incidentId
  * @returns {Promise<object>} The deleted incident data
  */
-async function softDeleteIncident(incidentId) {
+async function softDeleteIncident(idOrNumber) {
+  const incident = await getIncidentById(idOrNumber);
   const db = getDb();
-  const docRef = db.collection(COLLECTIONS.INCIDENTS).doc(incidentId);
-  const doc = await docRef.get();
+  const docRef = db.collection(COLLECTIONS.INCIDENTS).doc(incident.id);
 
-  if (!doc.exists || doc.data().softDeleted) {
-    throw new NotFoundError('Incident');
-  }
-
-  const previousState = doc.data();
+  const previousState = { ...incident };
 
   await docRef.update({
     softDeleted: true,
@@ -255,14 +261,10 @@ async function softDeleteIncident(incidentId) {
  * @param {string} incidentId
  * @returns {Promise<object>} Updated incident
  */
-async function activateSOS(incidentId) {
+async function activateSOS(idOrNumber) {
+  const incident = await getIncidentById(idOrNumber);
   const db = getDb();
-  const docRef = db.collection(COLLECTIONS.INCIDENTS).doc(incidentId);
-  const doc = await docRef.get();
-
-  if (!doc.exists || doc.data().softDeleted) {
-    throw new NotFoundError('Incident');
-  }
+  const docRef = db.collection(COLLECTIONS.INCIDENTS).doc(incident.id);
 
   await docRef.update({
     sosActive: true,
@@ -270,8 +272,7 @@ async function activateSOS(incidentId) {
     updatedAt: new Date(),
   });
 
-  const updated = await docRef.get();
-  return { id: updated.id, ...updated.data() };
+  return { ...incident, sosActive: true, status: 'active' };
 }
 
 /**

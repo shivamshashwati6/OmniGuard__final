@@ -58,7 +58,8 @@ function startRealtimeSync(wsService, logger) {
     }
 
     // Check for NEW_INCIDENT_NEARBY: Push to responders within 5km when an incident becomes active
-    if ((changeType === 'added' || changeType === 'modified') && incidentData.status === 'active' && incidentData.assignedTeam && incidentData.location?.coordinates) {
+    const activeStatuses = ['Reported', 'Triaged', 'Dispatching'];
+    if ((changeType === 'added' || changeType === 'modified') && activeStatuses.includes(incidentData.status) && incidentData.assignedTeam && incidentData.location?.coordinates) {
       if (!notifiedNearbyIncidents.has(incidentData.id)) {
         notifiedNearbyIncidents.add(incidentData.id);
 

@@ -195,7 +195,7 @@ function App() {
 
   const updateIncidentStatus = async (id, newStatus) => {
     try {
-      if (newStatus === 'resolved') {
+      if (newStatus === 'Resolved' || newStatus === 'resolved') {
         // Optimistic update
         setIncidents(prev => prev.filter(inc => inc.id !== id));
         await closeIncident(id, user.token);

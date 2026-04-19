@@ -11,7 +11,7 @@ export default function ResponderNavigation({ user, incidents = [], onUpdateStat
   // Find incident: either from state or the most recent active assignment for this team
   const incident = location.state?.incident || 
     incidents
-      .filter(inc => inc.assignedTeam === user?.responderTeam && inc.status !== 'Resolved')
+      .filter(inc => inc.assignedTeam === (user?.assignedTeam || user?.responderTeam) && inc.status !== 'Resolved')
       .sort((a, b) => (b.createdAt?._seconds || 0) - (a.createdAt?._seconds || 0))[0] ||
     { id: 'T-SYNC', type: 'No Active Assignment', location: 'Awaiting Dispatch', lat: 26.1445, lng: 91.7362, status: 'Idle', severity: 'Low' };
 

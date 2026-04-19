@@ -1,12 +1,7 @@
 import React from 'react'
 import { AlertCircle, MapPin, ShieldAlert, Zap, Clock } from 'lucide-react'
 
-const threats = [
-  { id: 'T-8822', type: 'Severe Flood', district: 'Lakhimpur', status: 'Expanding', risk: 'Extreme', time: '14m ago' },
-  { id: 'T-8823', type: 'Landslide', district: 'Karbi Anglong', status: 'Critical', risk: 'Major', time: '2h 15m ago' },
-  { id: 'T-8824', type: 'Seismic Activity', district: 'Dhemaji', status: 'Monitoring', risk: 'Moderate', time: '5h 30m ago' },
-  { id: 'T-8825', type: 'Forest Fire', district: 'Kaziranga Buffer', status: 'Contained', risk: 'Elevated', time: '8h ago' },
-]
+// Hardcoded threats removed — now driven entirely by the `incidents` prop.
 
 export default function ActiveThreats({ incidents = [] }) {
   const threats = incidents.map(inc => ({

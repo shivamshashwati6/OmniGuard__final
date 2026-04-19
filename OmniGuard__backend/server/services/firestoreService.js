@@ -160,17 +160,21 @@ async function listIncidents(options = {}) {
 async function getTeamStats(teamId) {
   const db = getDb();
   
+  // Query all non-terminal statuses (Title Case protocol)
+  const ACTIVE_STATUSES = ['Reported', 'Triaged', 'Dispatching', 'En Route', 'On Scene'];
+  
+  // Firestore 'in' queries support up to 10 values
   const activeSnapshot = await db.collection(COLLECTIONS.INCIDENTS)
     .where('softDeleted', '==', false)
     .where('assignedTeam', '==', teamId)
-    .where('status', '==', 'active')
+    .where('status', 'in', ACTIVE_STATUSES)
     .select()
     .get();
     
   const closedSnapshot = await db.collection(COLLECTIONS.INCIDENTS)
     .where('softDeleted', '==', false)
     .where('assignedTeam', '==', teamId)
-    .where('status', '==', 'Closed')
+    .where('status', 'in', ['Closed', 'Resolved'])
     .select()
     .get();
 
@@ -266,13 +270,14 @@ async function activateSOS(idOrNumber) {
   const db = getDb();
   const docRef = db.collection(COLLECTIONS.INCIDENTS).doc(incident.id);
 
+  // SOS is a flag overlay — do NOT override the incident status
+  // The status remains whatever it was (Reported, Triaged, etc.)
   await docRef.update({
     sosActive: true,
-    status: 'active',
     updatedAt: new Date(),
   });
 
-  return { ...incident, sosActive: true, status: 'active' };
+  return { ...incident, sosActive: true };
 }
 
 /**

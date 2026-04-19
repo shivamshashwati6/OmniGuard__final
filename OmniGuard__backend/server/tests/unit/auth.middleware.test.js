@@ -15,6 +15,9 @@ const verifyToken = createAuthMiddleware(mockEnv);
 function createMocks(authHeader) {
   const req = {
     headers: authHeader ? { authorization: authHeader } : {},
+    requestId: 'test-req-id',
+    path: '/api/test',
+    app: { locals: { logger: { warn: jest.fn() } } },
   };
   const res = {};
   const next = jest.fn();
@@ -63,20 +66,26 @@ describe('Auth Middleware (verifyToken)', () => {
     expect(error.message).toContain('Invalid token');
   });
 
-  it('should reject expired tokens', () => {
-    const token = signToken(
-      { userId: 'u1', email: 'test@test.com', role: 'coordinator', name: 'Test' },
-      { expiresIn: '0s' } // Already expired
+  it('should reject expired tokens', async () => {
+    // The middleware has a 120s clockTolerance, so we need the token
+    // to have expired more than 120s ago to actually trigger rejection.
+    const now = Math.floor(Date.now() / 1000);
+    const token = jwt.sign(
+      { userId: 'u1', email: 'test@test.com', role: 'coordinator', name: 'Test',
+        iat: now - 300, // Issued 5 minutes ago
+        exp: now - 200, // Expired ~3.3 minutes ago (well beyond 120s tolerance)
+      },
+      TEST_SECRET,
+      { algorithm: 'HS256' }
     );
     const { req, res, next } = createMocks(`Bearer ${token}`);
 
-    // Small delay to ensure expiration
-    setTimeout(() => {
-      verifyToken(req, res, next);
-      expect(next).toHaveBeenCalledTimes(1);
-      const error = next.mock.calls[0][0];
-      expect(error.message).toContain('expired');
-    }, 10);
+    verifyToken(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    const error = next.mock.calls[0][0];
+    expect(error.statusCode).toBe(401);
+    expect(error.message).toContain('expired');
   });
 
   it('should accept valid tokens and attach user to req', () => {

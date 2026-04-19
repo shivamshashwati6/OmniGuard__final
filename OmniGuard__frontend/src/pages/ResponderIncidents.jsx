@@ -10,7 +10,7 @@ export default function ResponderIncidents({ user, incidents = [] }) {
 
   // Filter incidents for this responder's team
   const displayIncidents = incidents
-    .filter(inc => inc.assignedTeam === user.responderTeam)
+    .filter(inc => inc.assignedTeam === (user.assignedTeam || user.responderTeam))
     .map(inc => ({
       id: inc.incidentNumber || inc.id,
       type: inc.type,

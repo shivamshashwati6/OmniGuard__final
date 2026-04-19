@@ -26,9 +26,10 @@ function createAuthMiddleware(env) {
         throw new AuthenticationError('Token not provided');
       }
 
-      // Verify and decode the JWT
+      // Verify and decode the JWT with clock tolerance for production skew
       const decoded = jwt.verify(token, env.JWT_SECRET, {
         algorithms: ['HS256'],
+        clockTolerance: 120, // 2 minutes tolerance for server-client skew
       });
 
       // Attach user payload to request object
@@ -48,6 +49,20 @@ function createAuthMiddleware(env) {
       }
 
       if (error.name === 'TokenExpiredError') {
+        const logger = req.app.locals.logger;
+        const decodedBase64 = req.headers.authorization.split('.')[1];
+        let tokenDetails = 'unknown';
+        try {
+          tokenDetails = JSON.parse(Buffer.from(decodedBase64, 'base64').toString());
+        } catch (e) {}
+        
+        logger.warn('Token expired', { 
+          requestId: req.requestId,
+          path: req.path,
+          iat: tokenDetails.iat ? new Date(tokenDetails.iat * 1000).toISOString() : 'N/A',
+          exp: tokenDetails.exp ? new Date(tokenDetails.exp * 1000).toISOString() : 'N/A',
+          serverTime: new Date().toISOString()
+        });
         return next(new AuthenticationError('Token has expired'));
       }
 

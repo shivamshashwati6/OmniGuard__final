@@ -167,6 +167,7 @@ async function bootstrap() {
   // 6d. CORS
   const allowedOrigins = [
     'https://omniguard-web.vercel.app',
+    'https://*.vercel.app',
     'https://huggingface.co',
     'https://*.hf.space'
   ];

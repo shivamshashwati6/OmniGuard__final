@@ -42,7 +42,7 @@ export async function getIncidents(token) {
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || 'Failed to fetch incidents');
   
-  return data.data.incidents;
+  return data.data;
 }
 
 export async function closeIncident(id, token) {

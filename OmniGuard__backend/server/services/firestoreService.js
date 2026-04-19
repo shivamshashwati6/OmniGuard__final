@@ -228,7 +228,7 @@ async function updateIncidentTriage(incidentId, triageData) {
     },
     severity: triageData.severity,
     assignedTeam: triageData.assignedTeam,
-    status: 'active',
+    status: 'Triaged',
     updatedAt: new Date(),
   });
 

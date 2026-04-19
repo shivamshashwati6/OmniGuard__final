@@ -28,6 +28,7 @@ export default function Login({ onLogin }) {
       
       const userData = {
         ...authData.user,
+        assignedTeam: authData.user.assignedTeam || authData.user.team,
         token: authData.accessToken,
         isAuthenticated: true
       };

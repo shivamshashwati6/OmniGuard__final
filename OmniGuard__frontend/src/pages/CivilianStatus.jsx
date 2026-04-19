@@ -2,12 +2,15 @@ import React from 'react';
 import { Activity, Clock, CheckCircle2, ChevronRight, AlertCircle, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export default function CivilianStatus({ incidents = [] }) {
-  const requests = incidents.map(inc => ({
+export default function CivilianStatus({ user, incidents = [] }) {
+  // Filter incidents reported by this user
+  const userIncidents = incidents.filter(inc => inc.reportedBy === user?.id);
+
+  const requests = userIncidents.map(inc => ({
     id: inc.incidentNumber || inc.id,
     type: inc.type,
     status: inc.status,
-    time: 'Just now', // Could be formatted from inc.createdAt
+    time: inc.createdAt ? new Date(inc.createdAt._seconds * 1000).toLocaleTimeString() : 'Recently',
     priority: inc.severity || 'Medium',
     sector: typeof inc.location === 'string' 
       ? inc.location 
@@ -30,7 +33,15 @@ export default function CivilianStatus({ incidents = [] }) {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {requests.map((req, i) => (
+        {requests.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-20 bg-white border-2 border-slate-50 rounded-[3rem] shadow-xl text-center">
+            <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6">
+              <Activity size={40} className="text-slate-200" />
+            </div>
+            <h3 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tight">No Active Reports</h3>
+            <p className="text-slate-500 max-w-xs mx-auto font-medium">You haven't submitted any emergency requests in the current session cycle.</p>
+          </div>
+        ) : requests.map((req, i) => (
           <motion.div 
             key={req.id}
             initial={{ opacity: 0, y: 20 }}

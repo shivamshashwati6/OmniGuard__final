@@ -93,19 +93,19 @@ export default function Dashboard({ incidents, onUpdateStatus }) {
                       <div className="flex flex-col items-center">
                          <span className="text-[10px] font-mono text-emerald-600 font-bold">14:2{i}</span>
                          <div className="w-[2px] flex-1 bg-slate-100 my-2" />
-                         <div className={`w-2 h-2 rounded-full ${inc.status === 'detected' ? 'bg-rose-500 animate-pulse' : 'bg-amber-500 animate-pulse'}`} />
+                         <div className={`w-2 h-2 rounded-full ${['Reported', 'Triaged', 'Dispatching'].includes(inc.status) ? 'bg-rose-500 animate-pulse' : 'bg-amber-500 animate-pulse'}`} />
                       </div>
                       <div className="flex-1">
                          <div className="flex items-center gap-3 mb-2">
                             <span className={`px-2 py-0.5 rounded text-[8px] font-bold border uppercase ${
-                              inc.severity === 'high' ? 'bg-rose-100 text-rose-500 border-rose-200' : 
-                              inc.severity === 'medium' ? 'bg-amber-100 text-amber-500 border-amber-200' : 
+                              ['Critical', 'High'].includes(inc.severity) ? 'bg-rose-100 text-rose-500 border-rose-200' : 
+                              inc.severity === 'Medium' ? 'bg-amber-100 text-amber-500 border-amber-200' : 
                               'bg-blue-100 text-blue-500 border-blue-200'
                             }`}>
                               {inc.severity}
                             </span>
                             <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">{inc.incidentNumber || inc.id}</span>
-                            <span className="text-[10px] font-mono text-slate-500 ml-auto">{inc.status === 'detected' ? 'UNRECOGNIZED_THREAT' : 'TEAM_EN_ROUTE'}</span>
+                            <span className="text-[10px] font-mono text-slate-500 ml-auto">{['Reported', 'Triaged'].includes(inc.status) ? 'UNRECOGNIZED_THREAT' : 'TEAM_EN_ROUTE'}</span>
                          </div>
                          <h4 className="text-sm font-bold text-slate-700 group-hover:text-emerald-600 transition-colors uppercase">
                            {inc.type} - {typeof inc.location === 'string' ? inc.location : (inc.location?.sector || inc.location?.address || 'Unknown Sector')}
@@ -115,16 +115,16 @@ export default function Dashboard({ incidents, onUpdateStatus }) {
                          </p>
                          
                          <div className="flex items-center gap-4 mt-6">
-                            {inc.status === 'detected' ? (
+                            {['Reported', 'Triaged'].includes(inc.status) ? (
                               <button 
-                                onClick={() => onUpdateStatus(inc.id, 'dispatched')}
+                                onClick={() => onUpdateStatus(inc.id, 'En Route')}
                                 className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-lg text-white font-bold text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-emerald-500/20"
                               >
                                 <Truck size={14} /> Dispatch Team
                               </button>
                             ) : (
                               <button 
-                                onClick={() => onUpdateStatus(inc.id, 'resolved')}
+                                onClick={() => onUpdateStatus(inc.id, 'Resolved')}
                                 className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 px-4 py-2 rounded-lg text-white font-bold text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-black/20"
                               >
                                 <CheckCircle2 size={14} /> Resolve Case

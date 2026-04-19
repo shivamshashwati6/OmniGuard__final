@@ -5,19 +5,21 @@ import { useNavigate } from 'react-router-dom';
 
 // Hardcoded activeIncidents removed to prevent unresolvable ghost incidents.
 
-export default function ResponderIncidents({ incidents = [] }) {
+export default function ResponderIncidents({ user, incidents = [] }) {
   const navigate = useNavigate();
 
-  // Use passed incidents
-  const displayIncidents = incidents.map(inc => ({
-    id: inc.incidentNumber || inc.id,
-    type: inc.type,
-    status: inc.status || 'Dispatched',
-    priority: inc.severity === 'high' ? 'Critical' : inc.severity === 'medium' ? 'High' : 'Normal',
-    location: inc.lat ? `${inc.lat.toFixed(2)}, ${inc.lng.toFixed(2)}` : (typeof inc.location === 'string' ? inc.location : (inc.location?.sector || inc.location?.address || 'Unknown Location')),
-    distance: inc.distance || '1.2km',
-    ...inc
-  }));
+  // Filter incidents for this responder's team
+  const displayIncidents = incidents
+    .filter(inc => inc.assignedTeam === user.responderTeam)
+    .map(inc => ({
+      id: inc.incidentNumber || inc.id,
+      type: inc.type,
+      status: inc.status || 'Dispatched',
+      priority: ['Critical', 'High'].includes(inc.severity) ? 'Critical' : inc.severity === 'Medium' ? 'High' : 'Normal',
+      location: inc.lat ? `${inc.lat.toFixed(2)}, ${inc.lng.toFixed(2)}` : (typeof inc.location === 'string' ? inc.location : (inc.location?.sector || inc.location?.address || 'Unknown Location')),
+      distance: inc.distance || '1.2km',
+      ...inc
+    }));
   return (
     <div className="flex flex-col h-full gap-6">
       <div className="flex items-center justify-between">

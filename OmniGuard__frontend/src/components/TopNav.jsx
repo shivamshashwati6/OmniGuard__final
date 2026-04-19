@@ -2,12 +2,20 @@ import React, { useState } from 'react'
 import { Bell, Search, User, Zap, Wifi, Clock, ShieldCheck, Menu, X, AlertTriangle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-export default function TopNav({ user, toggleSidebar, onQuickSOS }) {
+export default function TopNav({ user, toggleSidebar, onQuickSOS, incidents = [] }) {
   const [showNotifications, setShowNotifications] = useState(false)
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'System Online', message: 'Tactical network synchronization complete.', type: 'info', time: 'Just now' },
-    { id: 2, title: 'New Incident', message: 'Medical emergency reported in Sector G.', type: 'alert', time: '5m ago' }
-  ])
+  
+  // Derive notifications from incidents
+  const notifications = incidents
+    .sort((a, b) => (b.createdAt?._seconds || 0) - (a.createdAt?._seconds || 0))
+    .slice(0, 5)
+    .map(inc => ({
+      id: inc.id,
+      title: inc.status === 'Reported' ? 'New Incident' : `Update: ${inc.status}`,
+      message: `${inc.type} at ${typeof inc.location === 'string' ? inc.location : (inc.location?.sector || 'Unknown Location')}`,
+      type: ['Critical', 'High'].includes(inc.severity) ? 'alert' : 'info',
+      time: inc.createdAt ? new Date(inc.createdAt._seconds * 1000).toLocaleTimeString() : 'Recently'
+    }));
 
   return (
     <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 md:px-8 z-50 sticky top-0">

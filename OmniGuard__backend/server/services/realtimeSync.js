@@ -32,7 +32,13 @@ function startRealtimeSync(wsService, logger) {
       removed: 'INCIDENT_DELETED',
     };
 
-    const event = eventMap[changeType];
+    let event = eventMap[changeType];
+    
+    // Detect specialized events
+    if (changeType === 'modified') {
+      if (incidentData.status === 'Triaged') event = 'TRIAGE_COMPLETE';
+    }
+    
     if (!event) return;
 
     // Check if this is an SOS activation

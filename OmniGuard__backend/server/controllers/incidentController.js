@@ -167,18 +167,6 @@ async function create(req, res, next) {
       reportedBy: req.user.userId,
     });
 
-    // Audit log
-    writeAuditLog(logger, {
-      action: 'INCIDENT_CREATED',
-      actorId: req.user.userId,
-      actorRole: req.user.role,
-      resourceType: 'incident',
-      resourceId: incident.id,
-      requestId: req.requestId,
-      ipAddress: req.ip,
-      nextState: incident,
-    });
-
     // Trigger async Gemini triage (non-blocking)
     triageIncident(
       {
@@ -194,23 +182,13 @@ async function create(req, res, next) {
     )
       .then(async ({ result, model }) => {
         // Update incident with triage results
-        const updated = await updateIncidentTriage(incident.id, { ...result, model });
+        await updateIncidentTriage(incident.id, { ...result, model });
 
         logger.info('Triage completed for incident', {
           incidentId: incident.id,
           model,
           severity: result.severity,
         });
-
-        // Emit WebSocket event if service is available
-        const wsService = req.app.locals.wsService;
-        if (wsService) {
-          wsService.broadcast('TRIAGE_COMPLETE', {
-            incidentId: incident.id,
-            triage: result,
-            model,
-          });
-        }
       })
       .catch((triageError) => {
         logger.error('Background triage failed', {
@@ -218,12 +196,6 @@ async function create(req, res, next) {
           error: triageError.message,
         });
       });
-
-    // Emit WebSocket event
-    const wsService = req.app.locals.wsService;
-    if (wsService) {
-      wsService.broadcast('INCIDENT_CREATED', incident);
-    }
 
     sendSuccess(res, incident, 201);
   } catch (error) {
@@ -238,8 +210,13 @@ async function create(req, res, next) {
  */
 async function updateStatus(req, res, next) {
   try {
-    const { status, assignedTeam } = req.body;
+    let { status, assignedTeam } = req.body;
     const logger = req.app.locals.logger;
+
+    // Normalize status (handle snake_case from frontend)
+    if (status === 'en_route') status = 'En Route';
+    if (status === 'on_scene') status = 'On Scene';
+    if (status === 'resolved') status = 'Resolved';
 
     if (!status || !VALID_STATUSES.includes(status)) {
       throw new ValidationError(
@@ -277,18 +254,6 @@ async function updateStatus(req, res, next) {
       previousState: { status: previousState.status, assignedTeam: previousState.assignedTeam },
       nextState: { status, assignedTeam: updated.assignedTeam },
     });
-
-    // WebSocket broadcast
-    const wsService = req.app.locals.wsService;
-    if (wsService) {
-      wsService.broadcast('INCIDENT_UPDATED', {
-        incidentId: req.params.id,
-        previousStatus: previousState.status,
-        newStatus: status,
-        assignedTeam: updated.assignedTeam,
-        updatedBy: req.user.name,
-      });
-    }
 
     sendSuccess(res, updated);
   } catch (error) {
@@ -368,19 +333,6 @@ async function triggerSOS(req, res, next) {
       ipAddress: req.ip,
       nextState: { sosActive: true },
     });
-
-    // WebSocket: broadcast to ALL users
-    const wsService = req.app.locals.wsService;
-    if (wsService) {
-      wsService.broadcast('SOS_TRIGGERED', {
-        incidentId: req.params.id,
-        incidentNumber: updated.incidentNumber,
-        type: updated.type,
-        location: updated.location,
-        triggeredBy: req.user.name,
-        triggeredAt: new Date().toISOString(),
-      });
-    }
 
     sendSuccess(res, {
       message: 'SOS alert dispatched. All hands notified.',

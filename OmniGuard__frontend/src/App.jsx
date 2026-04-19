@@ -109,10 +109,17 @@ function App() {
           const incidentId = isSync ? incident.id : (rawPayload.incidentId || incident.id);
           const assignedTeam = isSync ? incident.assignedTeam : (rawPayload.triage?.assignedTeam || incident.assignedTeam);
 
+          if (!incidentId) return;
+
           if (evtName === 'INCIDENT_CREATED') {
             if (user.role === 'responder' && assignedTeam && assignedTeam !== user.assignedTeam) return;
             if (user.role === 'civilian' && incident.reportedBy?.userId !== user.id) return;
-            setIncidents(prev => [incident, ...prev]);
+            
+            setIncidents(prev => {
+              // Deduplication check
+              if (prev.some(inc => inc.id === incidentId)) return prev;
+              return [incident, ...prev];
+            });
           } else if (evtName === 'INCIDENT_UPDATED') {
             if (user.role === 'responder' && assignedTeam && assignedTeam !== user.assignedTeam) {
               setIncidents(prev => prev.filter(inc => inc.id !== incidentId));
@@ -120,18 +127,37 @@ function App() {
               setIncidents(prev => prev.map(inc => inc.id === incidentId ? { ...inc, ...incident } : inc));
             }
           } else if (evtName === 'TRIAGE_COMPLETE') {
-            const triage = rawPayload.triage || {};
-            if (user.role === 'responder' && triage.assignedTeam !== user.assignedTeam) {
-              setIncidents(prev => prev.filter(inc => inc.id !== incidentId));
-            } else {
-              setIncidents(prev => prev.map(inc => 
-                inc.id === incidentId ? { 
-                  ...inc, 
-                  severity: triage.severity,
-                  assignedTeam: triage.assignedTeam
-                } : inc
-              ));
-            }
+            const triage = rawPayload.triage || incident.triage || {};
+            
+            setIncidents(prev => {
+              const exists = prev.some(inc => inc.id === incidentId);
+              
+              // If it exists, update it
+              if (exists) {
+                // If it's a responder and now assigned elsewhere, remove it
+                if (user.role === 'responder' && triage.assignedTeam && triage.assignedTeam !== user.assignedTeam) {
+                  return prev.filter(inc => inc.id !== incidentId);
+                }
+                
+                return prev.map(inc => 
+                  inc.id === incidentId ? { 
+                    ...inc, 
+                    ...incident,
+                    severity: triage.severity || incident.severity,
+                    assignedTeam: triage.assignedTeam || incident.assignedTeam,
+                    triage: triage,
+                    status: 'Triaged'
+                  } : inc
+                );
+              }
+              
+              // If it doesn't exist but is now assigned to this responder, add it
+              if (user.role === 'responder' && (triage.assignedTeam === user.assignedTeam || incident.assignedTeam === user.assignedTeam)) {
+                return [{ id: incidentId, ...incident, ...triage, status: 'Triaged' }, ...prev];
+              }
+              
+              return prev;
+            });
           } else if (evtName === 'INCIDENT_CLOSED' || evtName === 'INCIDENT_DELETED') {
             setIncidents(prev => prev.filter(inc => inc.id !== incidentId));
           }
@@ -216,6 +242,7 @@ function App() {
           <TopNav 
             user={user} 
             isSidebarOpen={isSidebarOpen} 
+            incidents={incidents}
             toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
             onQuickSOS={handleQuickSOS}
           />
@@ -250,13 +277,13 @@ function App() {
               } />
               <Route path="/status" element={
                 <ProtectedRoute user={user} allowedRoles={['civilian']}>
-                  <CivilianStatus incidents={incidents} />
+                  <CivilianStatus user={user} incidents={incidents} />
                 </ProtectedRoute>
               } />
               
               <Route path="/incidents" element={
                 <ProtectedRoute user={user} allowedRoles={['responder']}>
-                  <ResponderIncidents incidents={incidents} />
+                  <ResponderIncidents user={user} incidents={incidents} />
                 </ProtectedRoute>
               } />
 
@@ -268,18 +295,18 @@ function App() {
               
               <Route path="/maps" element={
                 <ProtectedRoute user={user} allowedRoles={['coordinator', 'responder']}>
-                  {user.role === 'coordinator' ? <MapView incidents={incidents} /> : <ResponderNavigation onUpdateStatus={updateIncidentStatus} />}
+                  {user.role === 'coordinator' ? <MapView incidents={incidents} /> : <ResponderNavigation user={user} incidents={incidents} onUpdateStatus={updateIncidentStatus} />}
                 </ProtectedRoute>
               } />
 
               <Route path="/coordinator" element={
                 <ProtectedRoute user={user} allowedRoles={['coordinator']}>
-                  <CommanderCenter user={user} />
+                  <CommanderCenter user={user} incidents={incidents} />
                 </ProtectedRoute>
               } />
               <Route path="/alerts" element={
                 <ProtectedRoute user={user} allowedRoles={['coordinator']}>
-                  <ActiveThreats />
+                  <ActiveThreats incidents={incidents} />
                 </ProtectedRoute>
               } />
 

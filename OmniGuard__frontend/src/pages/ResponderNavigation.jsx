@@ -4,21 +4,26 @@ import { motion } from 'framer-motion';
 import { Navigation, CheckCircle, AlertTriangle, MapPin, Radio, Activity } from 'lucide-react';
 import TacticalMap from '../components/TacticalMap';
 
-export default function ResponderNavigation({ onUpdateStatus }) {
+export default function ResponderNavigation({ user, incidents = [], onUpdateStatus }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const mockIncident = { id: 'INC-772', type: 'Medical Emergency', location: 'Bhetapara, Guwahati', lat: 26.1445, lng: 91.7362, status: 'dispatched', severity: 'high' };
-  const incident = location.state?.incident || mockIncident;
+  
+  // Find incident: either from state or the most recent active assignment for this team
+  const incident = location.state?.incident || 
+    incidents
+      .filter(inc => inc.assignedTeam === user?.responderTeam && inc.status !== 'Resolved')
+      .sort((a, b) => (b.createdAt?._seconds || 0) - (a.createdAt?._seconds || 0))[0] ||
+    { id: 'T-SYNC', type: 'No Active Assignment', location: 'Awaiting Dispatch', lat: 26.1445, lng: 91.7362, status: 'Idle', severity: 'Low' };
 
   const handleStatusUpdate = (status) => {
-    if (onUpdateStatus) {
+    if (onUpdateStatus && incident.id !== 'T-SYNC') {
       onUpdateStatus(incident.id, status);
     }
   };
 
   const handleResolve = () => {
-    if (onUpdateStatus) {
-      onUpdateStatus(incident.id, 'resolved');
+    if (onUpdateStatus && incident.id !== 'T-SYNC') {
+      onUpdateStatus(incident.id, 'Resolved');
     }
     navigate('/incidents');
   };
@@ -89,11 +94,11 @@ export default function ResponderNavigation({ onUpdateStatus }) {
 
               <div className="space-y-3">
                  <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest ml-1 mb-4">Update Pulse Status</p>
-                 <button onClick={() => handleStatusUpdate('en_route')} className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all active:scale-95 uppercase tracking-widest text-xs flex items-center justify-center gap-3">
+                 <button onClick={() => handleStatusUpdate('En Route')} className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all active:scale-95 uppercase tracking-widest text-xs flex items-center justify-center gap-3">
                     <Radio size={16} />
                     Signal: In Transit
                  </button>
-                 <button onClick={() => handleStatusUpdate('on_scene')} className="w-full py-4 bg-amber-500 text-white font-black rounded-2xl shadow-xl shadow-amber-500/20 hover:bg-amber-600 transition-all active:scale-95 uppercase tracking-widest text-xs flex items-center justify-center gap-3">
+                 <button onClick={() => handleStatusUpdate('On Scene')} className="w-full py-4 bg-amber-500 text-white font-black rounded-2xl shadow-xl shadow-amber-500/20 hover:bg-amber-600 transition-all active:scale-95 uppercase tracking-widest text-xs flex items-center justify-center gap-3">
                     <Activity size={16} />
                     Signal: On Scene
                  </button>

@@ -16,7 +16,15 @@ const accessCodes = [
   { id: 'OP-301', operator: 'K. Datta', code: '••••-••••', level: 2, status: 'Revoked' },
 ]
 
-export default function CommanderCenter({ user }) {
+export default function CommanderCenter({ user, incidents = [] }) {
+  const responders = incidents.filter(inc => inc.assignedTeam).map(inc => ({
+    id: inc.id.substring(0, 5).toUpperCase(),
+    name: inc.assignedTeam,
+    status: inc.status,
+    location: typeof inc.location === 'string' ? inc.location : (inc.location?.sector || 'SECTOR_UNKNOWN'),
+    load: inc.severity === 'Critical' ? 95 : inc.severity === 'High' ? 70 : 40
+  }));
+
   const [lockdownOpen, setLockdownOpen] = useState(false)
   const [isLocked, setIsLocked] = useState(false)
   const [terminalLog, setTerminalLog] = useState([
@@ -111,23 +119,30 @@ export default function CommanderCenter({ user }) {
               </h3>
               
               <div className="space-y-4">
-                 {responders.map((r) => (
-                   <div key={r.id} className="flex items-center justify-between border border-emerald-500/5 p-3 hover:bg-emerald-500/5 transition-colors cursor-pointer group">
-                      <div className="flex items-center gap-3">
-                         <div className="font-mono text-[10px] text-emerald-500/40 bg-[#1e293b] px-1.5 py-0.5">{r.id}</div>
-                         <div>
-                            <p className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors uppercase">{r.name}</p>
-                            <p className="text-[10px] opacity-40 uppercase tracking-tighter">{r.location}</p>
-                         </div>
+                 {responders.length === 0 ? (
+                    <div className="p-8 text-center border border-emerald-500/5 bg-emerald-500/5">
+                      <Radio size={32} className="mx-auto mb-2 opacity-20" />
+                      <p className="text-xs opacity-40 uppercase">No Active Dispatch Missions</p>
+                    </div>
+                 ) : (
+                    responders.map((r) => (
+                      <div key={r.id} className="flex items-center justify-between border border-emerald-500/5 p-3 hover:bg-emerald-500/5 transition-colors cursor-pointer group">
+                        <div className="flex items-center gap-3">
+                           <div className="font-mono text-[10px] text-emerald-500/40 bg-[#1e293b] px-1.5 py-0.5">{r.id}</div>
+                           <div>
+                              <p className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors uppercase">{r.name}</p>
+                              <p className="text-[10px] opacity-40 uppercase tracking-tighter">{r.location}</p>
+                           </div>
+                        </div>
+                        <div className="text-right">
+                           <div className={`text-[10px] font-bold ${['Active', 'En Route', 'On Scene'].includes(r.status) ? 'text-emerald-400' : 'text-amber-400'}`}>{r.status.toUpperCase()}</div>
+                           <div className="w-24 h-1 bg-[#1e293b] rounded-full mt-1">
+                              <div style={{width: `${r.load}%`}} className={`h-full ${r.load > 80 ? 'bg-rose-500' : 'bg-emerald-500'}`}></div>
+                           </div>
+                        </div>
                       </div>
-                      <div className="text-right">
-                         <div className={`text-[10px] font-bold ${r.status === 'Active' ? 'text-emerald-400' : 'text-amber-400'}`}>{r.status.toUpperCase()}</div>
-                         <div className="w-24 h-1 bg-[#1e293b] rounded-full mt-1">
-                            <div style={{width: `${r.load}%`}} className={`h-full ${r.load > 80 ? 'bg-rose-500' : 'bg-emerald-500'}`}></div>
-                         </div>
-                      </div>
-                   </div>
-                 ))}
+                    ))
+                 )}
               </div>
            </div>
 

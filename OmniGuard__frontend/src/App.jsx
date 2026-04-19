@@ -92,9 +92,17 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!user || !user.token) return;
+    if (!user || !user.token || user.token === 'undefined') {
+      if (user?.token === 'undefined') {
+        console.warn('Corrupted session detected, clearing...');
+        handleLogout();
+      }
+      return;
+    }
 
     let ws;
+    let reconnectAttempts = 0;
+    let reconnectTimer;
 
     const loadIncidents = async () => {
       try {
@@ -103,11 +111,23 @@ function App() {
         setIncidents(data?.items || (Array.isArray(data) ? data : []));
       } catch (err) {
         console.error('Failed to load incidents', err);
+        if (err.message.includes('401') || err.message.toLowerCase().includes('unauthorized')) {
+          handleLogout();
+        }
       }
     };
 
     const connectWebSocket = () => {
-      ws = new WebSocket(`${WS_BASE}?token=${user.token}`);
+      if (!user?.token || user.token === 'undefined') return;
+      
+      const wsUrl = `${WS_BASE}?token=${user.token}`;
+      console.log('Connecting to WebSocket...', WS_BASE);
+      ws = new WebSocket(wsUrl);
+      
+      ws.onopen = () => {
+        console.log('WS connected');
+        reconnectAttempts = 0;
+      };
       
       ws.onmessage = (event) => {
         try {
@@ -180,7 +200,9 @@ function App() {
       ws.onerror = (err) => console.error('WebSocket Error', err);
       ws.onclose = () => {
         console.log('WS disconnected, reconnecting...');
-        setTimeout(connectWebSocket, 3000);
+        const timeout = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+        reconnectAttempts++;
+        reconnectTimer = setTimeout(connectWebSocket, timeout);
       };
     };
 
@@ -189,6 +211,7 @@ function App() {
 
     return () => {
       if (ws) ws.close();
+      if (reconnectTimer) clearTimeout(reconnectTimer);
     };
   }, [user]);
 

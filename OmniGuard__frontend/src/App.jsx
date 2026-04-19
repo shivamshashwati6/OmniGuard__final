@@ -143,20 +143,13 @@ function App() {
           if (!incidentId) return;
 
           if (evtName === 'INCIDENT_CREATED') {
-            if (user.role === 'responder' && assignedTeam && assignedTeam !== user.assignedTeam) return;
-            if (user.role === 'civilian' && incident.reportedBy?.userId !== user.id) return;
-            
             setIncidents(prev => {
               // Deduplication check
               if (prev.some(inc => inc.id === incidentId)) return prev;
               return [incident, ...prev];
             });
           } else if (evtName === 'INCIDENT_UPDATED') {
-            if (user.role === 'responder' && assignedTeam && assignedTeam !== user.assignedTeam) {
-              setIncidents(prev => prev.filter(inc => inc.id !== incidentId));
-            } else {
-              setIncidents(prev => prev.map(inc => inc.id === incidentId ? { ...inc, ...incident } : inc));
-            }
+            setIncidents(prev => prev.map(inc => inc.id === incidentId ? { ...inc, ...incident } : inc));
           } else if (evtName === 'TRIAGE_COMPLETE') {
             const triage = rawPayload.triage || incident.triage || {};
             
@@ -165,11 +158,6 @@ function App() {
               
               // If it exists, update it
               if (exists) {
-                // If it's a responder and now assigned elsewhere, remove it
-                if (user.role === 'responder' && triage.assignedTeam && triage.assignedTeam !== user.assignedTeam) {
-                  return prev.filter(inc => inc.id !== incidentId);
-                }
-                
                 return prev.map(inc => 
                   inc.id === incidentId ? { 
                     ...inc, 
@@ -182,12 +170,8 @@ function App() {
                 );
               }
               
-              // If it doesn't exist but is now assigned to this responder, add it
-              if (user.role === 'responder' && (triage.assignedTeam === user.assignedTeam || incident.assignedTeam === user.assignedTeam)) {
-                return [{ id: incidentId, ...incident, ...triage, status: 'Triaged' }, ...prev];
-              }
-              
-              return prev;
+              // Add it if it doesn't exist
+              return [{ id: incidentId, ...incident, ...triage, status: 'Triaged' }, ...prev];
             });
           } else if (evtName === 'INCIDENT_CLOSED' || evtName === 'INCIDENT_DELETED') {
             setIncidents(prev => prev.filter(inc => inc.id !== incidentId));

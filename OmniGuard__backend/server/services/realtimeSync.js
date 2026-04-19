@@ -116,31 +116,13 @@ function startRealtimeSync(wsService, logger) {
       logger.error('Failed to update global stats:', err);
     });
 
-    // Broadcast the change
-    // Deleted events go to coordinators only.
-    if (changeType === 'removed') {
-      wsService.broadcastToRole('coordinator', event, {
-        incidentId: incidentData.id,
-        changeType,
-        source: 'firestore-sync',
-      });
-    } else {
-      // Only call broadcastToTeam(teamId, data) as requested, avoiding a global broadcast
-      if (incidentData.assignedTeam) {
-        wsService.broadcastToTeam(incidentData.assignedTeam, event, {
-          incident: incidentData,
-          changeType,
-          source: 'firestore-sync',
-        });
-      } else {
-        // Fallback for incidents without an assigned team
-        wsService.broadcast(event, {
-          incident: incidentData,
-          changeType,
-          source: 'firestore-sync',
-        });
-      }
-    }
+    // Broadcast the change GLOBALLY to all connected users
+    // This ensures all users (Coordinators, Responders, Civilians) see real-time updates simultaneously
+    wsService.broadcast(event, {
+      incident: incidentData,
+      changeType,
+      source: 'firestore-sync',
+    });
 
     logger.debug(`Firestore sync: ${event}`, {
       incidentId: incidentData.id,
@@ -152,7 +134,7 @@ function startRealtimeSync(wsService, logger) {
   const { subscribeToResponders } = require('./firestoreService');
   const responderUnsub = subscribeToResponders((changeType, responderData) => {
     if (changeType === 'modified' && responderData.currentPosition) {
-      wsService.broadcastToRole('coordinator', 'RESPONDER_LOCATION_UPDATE', {
+      wsService.broadcast('RESPONDER_LOCATION_UPDATE', {
         responderId: responderData.id,
         name: responderData.name,
         lat: responderData.currentPosition.lat,

@@ -193,7 +193,6 @@ async function bootstrap() {
   // Public routes (no auth required)
   app.use('/api/health', healthRoutes);
   app.use('/api/auth', createAuthRoutes(env));
-  app.use('/api/debug/logs', require('./routes/debug'));
 
   // Protected routes (JWT required)
   app.use('/api/incidents', verifyToken, incidentRoutes);

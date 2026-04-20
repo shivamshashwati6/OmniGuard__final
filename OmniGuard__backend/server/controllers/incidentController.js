@@ -181,7 +181,7 @@ async function create(req, res, next) {
         type,
         location: incidentData.location,
         contextData: description,
-        reportedBy: { role: req.user.role, name: req.user.name },
+        reportedBy: req.user ? { role: req.user.role, name: req.user.name } : { role: 'civilian', name: 'Anonymous' },
         assignedTeam: incidentData.assignedTeam,
       },
       env,

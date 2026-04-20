@@ -55,9 +55,9 @@ export default function AdminDashboard({ user, incidents = [], onUpdateStatus })
     : activeIncidents.filter(i => i.assignedTeam === filterType);
 
   const statCards = [
-    { label: 'Network Success Rate', value: stats.successRate, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { label: 'Active Deployments', value: stats.active.toString(), icon: Zap, color: 'text-rose-500', bg: 'bg-rose-50' },
-    { label: 'Incidents Resolved', value: stats.resolved.toString(), icon: CheckCircle2, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { label: 'Network Success Rate', value: stats?.successRate || '0%', icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { label: 'Active Deployments', value: (stats?.active ?? 0).toString(), icon: Zap, color: 'text-rose-500', bg: 'bg-rose-50' },
+    { label: 'Incidents Resolved', value: (stats?.resolved ?? 0).toString(), icon: CheckCircle2, color: 'text-blue-500', bg: 'bg-blue-50' },
     { label: 'Avg Response Time', value: '4.2m', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
   ];
 

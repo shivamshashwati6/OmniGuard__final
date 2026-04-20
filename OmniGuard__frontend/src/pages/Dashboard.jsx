@@ -14,8 +14,8 @@ export default function Dashboard({ incidents = [], onUpdateStatus }) {
   const highPriority = activeIncidents.filter(i => i.severity === 'High' || i.severity === 'Critical').length;
   
   const stats = [
-    { label: 'Live Incidents', value: activeCount.toString(), icon: ShieldAlert, color: 'text-red-500', trend: 'Live' },
-    { label: 'High Priority', value: highPriority.toString(), icon: Zap, color: 'text-amber-500', trend: 'Alert' },
+    { label: 'Live Incidents', value: (activeCount ?? 0).toString(), icon: ShieldAlert, color: 'text-red-500', trend: 'Live' },
+    { label: 'High Priority', value: (highPriority ?? 0).toString(), icon: Zap, color: 'text-amber-500', trend: 'Alert' },
     { label: 'Active Responders', value: '148', icon: Users, color: 'text-emerald-500', trend: 'Stable' },
     { label: 'System Uptime', value: '99.9%', icon: Activity, color: 'text-emerald-500', trend: 'Optimal' },
   ];

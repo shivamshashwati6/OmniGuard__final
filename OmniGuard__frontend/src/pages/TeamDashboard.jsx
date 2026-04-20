@@ -143,8 +143,8 @@ export default function TeamDashboard({ user, incidents, onUpdateStatus, userLoc
   const highPriority = teamIncidents.filter(i => i.severity === 'High' || i.severity === 'Critical').length;
 
   const stats = [
-    { label: 'Assigned Ops', value: activeCount.toString(), icon: config.icon, color: config.color, trend: 'Active' },
-    { label: 'Priority Alerts', value: highPriority.toString(), icon: Zap, color: 'text-amber-500', trend: 'Critical' },
+    { label: 'Assigned Ops', value: (activeCount ?? 0).toString(), icon: config.icon, color: config.color, trend: 'Active' },
+    { label: 'Priority Alerts', value: (highPriority ?? 0).toString(), icon: Zap, color: 'text-amber-500', trend: 'Critical' },
     { label: 'Unit Readiness', value: '94%', icon: Truck, color: 'text-emerald-500', trend: 'Stable' },
     { label: 'Sector Coverage', value: '88%', icon: Navigation, color: 'text-blue-500', trend: 'Optimal' },
   ];

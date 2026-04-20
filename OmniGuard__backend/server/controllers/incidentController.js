@@ -146,27 +146,25 @@ async function create(req, res, next) {
       location: {
         sector: typeof location === 'string' 
           ? location 
-          : (typeof location?.sector === 'string' 
-              ? location.sector 
-              : (location?.sector?.sector || location?.address || 'G-Sector Alpha')),
-        coordinates: location?.coordinates || (location?.lat ? { lat: location.lat, lng: location.lng } : null),
-        address: location?.address || (typeof location === 'string' ? null : null),
+          : (location?.sector || 'G-Sector Alpha'),
+        coordinates: (location?.coordinates || (location?.lat ? { lat: location.lat, lng: location.lng } : null)) || null,
+        address: (location?.address || null) || null,
       },
       severity: preTriage.severity || 'Medium',
       status: 'Reported',
       reportedBy: req.user ? {
-        userId: req.user.uid || req.user.userId,
-        role: req.user.role,
-        name: req.user.name,
+        userId: req.user.uid || req.user.userId || 'unknown',
+        role: req.user.role || 'civilian',
+        name: req.user.name || 'Authenticated User',
       } : {
-        userId: 'anonymous_civilian',
+        userId: 'anonymous',
         role: 'civilian',
         name: 'Anonymous',
       },
-      assignedTeam: assignedTeam || preTriage.assignedTeam,
+      description: description || '',
+      assignedTeam: assignedTeam || preTriage.assignedTeam || 'Police',
       triage: null,
       sosActive: false,
-      description: description || null,
     };
 
     // Persist to Firestore
@@ -180,19 +178,15 @@ async function create(req, res, next) {
       reportedBy: req.user ? req.user.userId : 'anonymous',
     });
 
-    // Trigger async Gemini triage (non-blocking)
-    triageIncident(
-      {
-        incidentId: incident.id,
-        type,
-        location: incidentData.location,
-        contextData: description,
-        reportedBy: req.user ? { role: req.user.role, name: req.user.name } : { role: 'civilian', name: 'Anonymous' },
-        assignedTeam: incidentData.assignedTeam,
-      },
-      env,
-      logger
-    )
+    // Background triage (don't await response for user)
+    triageIncident({
+      incidentId: incident.id,
+      type,
+      location: incidentData.location,
+      contextData: description,
+      reportedBy: incidentData.reportedBy,
+      assignedTeam: incidentData.assignedTeam
+    }, env, logger)
       .then(async ({ result, model }) => {
         // Update incident with triage results
         await updateIncidentTriage(incident.id, { ...result, model });

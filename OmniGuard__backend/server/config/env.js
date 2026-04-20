@@ -29,8 +29,8 @@ const envSchema = z.object({
 
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900000),
-  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
-  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(1000),
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(50),
 
   // Logging
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly']).default('info'),

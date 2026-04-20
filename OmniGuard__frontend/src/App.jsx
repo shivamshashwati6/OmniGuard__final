@@ -28,6 +28,10 @@ function cn(...inputs) {
 
 import { getIncidents, closeIncident, updateIncidentStatus as apiUpdateStatus, WS_BASE, createIncident } from './services/api';
 
+import { wsService } from './services/wsService';
+import { App } from '@capacitor/app';
+import { BackgroundTask } from '@capawesome/capacitor-background-task';
+
 function App() {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('omni_user');
@@ -37,6 +41,29 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024)
   const [userLocation, setUserLocation] = useState(null);
   const [gpsPermission, setGpsPermission] = useState('prompt'); // prompt, granted, denied
+
+  // Background Task & App State Management
+  useEffect(() => {
+    const stateListener = App.addListener('appStateChange', async ({ isActive }) => {
+      console.log('App state changed. Is active?', isActive);
+      if (!isActive) {
+        // App is minimized
+        const taskId = await BackgroundTask.beforeExit(async () => {
+          console.log('Running background task to keep connections alive...');
+          // Keep WS alive or perform final sync
+          // Note: OS will still eventually kill the process
+          BackgroundTask.finish({ taskId });
+        });
+      } else {
+        // App is foregrounded
+        wsService.connect(); // Ensure reconnected
+      }
+    });
+
+    return () => {
+      stateListener.then(l => l.remove());
+    };
+  }, []);
 
   const handleQuickSOS = async () => {
     if (!user?.token) return;
@@ -149,15 +176,9 @@ function App() {
       return;
     }
 
-    let ws;
-    let reconnectAttempts = 0;
-    let reconnectTimer;
-    let isUnmounted = false;
-
     const loadIncidents = async () => {
       try {
         const data = await getIncidents(user.token);
-        // Backend returns paginated object { items: [], total: n }
         setIncidents(data?.items || (Array.isArray(data) ? data : []));
       } catch (err) {
         console.error('Failed to load incidents', err);
@@ -167,92 +188,56 @@ function App() {
       }
     };
 
-    const connectWebSocket = () => {
-      if (!user?.token || user.token === 'undefined') return;
+    const handleWSMessage = (msg) => {
+      const { event: evtName, payload: rawPayload } = msg;
+      const isSync = !!rawPayload.incident;
+      const incident = isSync ? rawPayload.incident : rawPayload;
       
-      const wsUrl = `${WS_BASE}?token=${user.token}`;
-      console.log('Connecting to WebSocket...', WS_BASE);
-      ws = new WebSocket(wsUrl);
-      
-      ws.onopen = () => {
-        console.log('WS connected');
-        reconnectAttempts = 0;
-      };
-      
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          const { event: evtName, payload: rawPayload } = msg;
+      if (!incident) return;
 
-          // Normalize payload: extract from firestore-sync wrapper if present
-          const isSync = !!rawPayload.incident;
-          const incident = isSync ? rawPayload.incident : rawPayload;
-          
-          if (!incident) return;
+      const incidentId = isSync ? incident.id : (rawPayload.incidentId || incident.id);
+      if (!incidentId) return;
 
-          const incidentId = isSync ? incident.id : (rawPayload.incidentId || incident.id);
-          const assignedTeam = isSync ? incident.assignedTeam : (rawPayload.triage?.assignedTeam || incident.assignedTeam || rawPayload.assignedTeam);
-
-          if (!incidentId) return;
-
-          if (evtName === 'INCIDENT_CREATED') {
-            setIncidents(prev => {
-              // Safety filter to remove any nulls that might have snuck in
-              const cleanPrev = prev.filter(Boolean);
-              // Deduplication check
-              if (cleanPrev.some(inc => inc.id === incidentId || inc.incidentId === incidentId)) return cleanPrev;
-              return [{ id: incidentId, ...incident }, ...cleanPrev];
-            });
-          } else if (evtName === 'INCIDENT_UPDATED') {
-            setIncidents(prev => prev.filter(Boolean).map(inc => inc.id === incidentId || inc.incidentId === incidentId ? { ...inc, ...incident } : inc));
-          } else if (evtName === 'TRIAGE_COMPLETE') {
-            const triage = rawPayload.triage || incident.triage || {};
-            
-            setIncidents(prev => {
-              const exists = prev.some(inc => inc.id === incidentId);
-              
-              // If it exists, update it
-              if (exists) {
-                return prev.map(inc => 
-                  inc.id === incidentId ? { 
-                    ...inc, 
-                    ...incident,
-                    severity: triage.severity || incident.severity,
-                    assignedTeam: triage.assignedTeam || incident.assignedTeam,
-                    triage: triage,
-                    status: 'Triaged'
-                  } : inc
-                );
-              }
-              
-              // Add it if it doesn't exist
-              return [{ id: incidentId, ...incident, ...triage, status: 'Triaged' }, ...prev];
-            });
-          } else if (evtName === 'INCIDENT_CLOSED' || evtName === 'INCIDENT_DELETED') {
-            setIncidents(prev => prev.filter(Boolean).filter(inc => inc.id !== incidentId && inc.incidentId !== incidentId));
+      if (evtName === 'INCIDENT_CREATED') {
+        setIncidents(prev => {
+          const cleanPrev = prev.filter(Boolean);
+          if (cleanPrev.some(inc => inc.id === incidentId || inc.incidentId === incidentId)) return cleanPrev;
+          return [{ id: incidentId, ...incident }, ...cleanPrev];
+        });
+      } else if (evtName === 'INCIDENT_UPDATED') {
+        setIncidents(prev => prev.filter(Boolean).map(inc => inc.id === incidentId || inc.incidentId === incidentId ? { ...inc, ...incident } : inc));
+      } else if (evtName === 'TRIAGE_COMPLETE') {
+        const triage = rawPayload.triage || incident.triage || {};
+        setIncidents(prev => {
+          const exists = prev.some(inc => inc.id === incidentId);
+          if (exists) {
+            return prev.map(inc => 
+              inc.id === incidentId ? { 
+                ...inc, 
+                ...incident,
+                severity: triage.severity || incident.severity,
+                assignedTeam: triage.assignedTeam || incident.assignedTeam,
+                triage: triage,
+                status: 'Triaged'
+              } : inc
+            );
           }
-        } catch(err) {
-          console.error('WS Parse Error', err);
-        }
-      };
-      
-      ws.onerror = (err) => console.error('WebSocket Error', err);
-      ws.onclose = () => {
-        if (isUnmounted) return;
-        console.log('WS disconnected, reconnecting...');
-        const timeout = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-        reconnectAttempts++;
-        reconnectTimer = setTimeout(connectWebSocket, timeout);
-      };
+          return [{ id: incidentId, ...incident, ...triage, status: 'Triaged' }, ...prev];
+        });
+      } else if (evtName === 'INCIDENT_CLOSED' || evtName === 'INCIDENT_DELETED') {
+        setIncidents(prev => prev.filter(Boolean).filter(inc => inc.id !== incidentId && inc.incidentId !== incidentId));
+      }
     };
 
     loadIncidents();
-    connectWebSocket();
+    
+    wsService.setToken(user.token);
+    wsService.connect();
+    const removeListener = wsService.addListener(handleWSMessage);
 
     return () => {
-      isUnmounted = true;
-      if (ws) ws.close();
-      if (reconnectTimer) clearTimeout(reconnectTimer);
+      removeListener();
+      wsService.disconnect();
     };
   }, [user]);
 

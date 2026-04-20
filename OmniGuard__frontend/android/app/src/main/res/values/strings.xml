@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">OmniGuard</string>
+    <string name="title_activity_main">OmniGuard</string>
+    <string name="package_name">com.stadiumflow.app</string>
+    <string name="custom_url_scheme">com.stadiumflow.app</string>
+</resources>

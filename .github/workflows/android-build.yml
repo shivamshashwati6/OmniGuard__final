@@ -1,0 +1,48 @@
+name: Android Build
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: OmniGuard__frontend/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: OmniGuard__frontend
+        run: npm ci
+
+      - name: Build Web App
+        working-directory: OmniGuard__frontend
+        run: npm run build
+
+      - name: Sync Capacitor
+        working-directory: OmniGuard__frontend
+        run: npx cap sync android
+
+      - name: Build Android APK
+        working-directory: OmniGuard__frontend/android
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: OmniGuard__frontend/android/app/build/outputs/apk/debug/app-debug.apk

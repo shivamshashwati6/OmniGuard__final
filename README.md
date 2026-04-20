@@ -37,6 +37,25 @@ OmniGuard/
 └── CONTRIBUTING.md         # Guidelines for developers
 ```
 
+## 🔑 Test Credentials (Dev/Stage)
+
+The system is pre-seeded with these test accounts for verification:
+
+| Role | Email | Password | Access |
+| :--- | :--- | :--- | :--- |
+| **Coordinator** | `coordinator@omniguard.io` | `omni2024!` | Full Command & Map |
+| **Responder (Medic)** | `medic1@omniguard.io` | `resp2024!` | Medical Unit View |
+| **Responder (Fire)** | `fire_beta@omniguard.io` | `resp2024!` | Fire Unit View |
+| **Civilian (User)** | `civilian@omniguard.io` | `civ2024!` | Standard Portal |
+
+## 🚨 Public Incident Reporting
+
+OmniGuard supports anonymous public reporting via [omniguard-suite.vercel.app/report](https://omniguard-suite.vercel.app/report). 
+
+- **Unauthenticated Flow**: No login required for civilians.
+- **Auto-Triage**: Public reports are automatically categorized and routed to teams.
+- **Deep-Linking**: Use `?type=fire` or `?type=medical` query params to pre-fill the reporting form.
+
 ## 🛠️ Getting Started
 
 For detailed setup instructions, please refer to the documentation in each subdirectory:
@@ -44,4 +63,4 @@ For detailed setup instructions, please refer to the documentation in each subdi
 - [Backend Setup Guide](./OmniGuard__backend/server/README.md)
 
 ---
-© 2024 OmniGuard Systems • Authorized Personnel Only
+© 2026 OmniGuard Systems • Authorized Personnel Only

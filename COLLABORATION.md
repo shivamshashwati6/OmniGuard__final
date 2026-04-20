@@ -79,7 +79,10 @@ The frontend interacts with the backend using the JSON API and is automatically 
   - Query params: `status`, `severity`, `page`, `limit`
 - `GET /api/incidents/:id`
 - `POST /api/incidents`
-  - Creates a new incident. Needs: `{ type, location, description }`
+  - Creates a new incident (Authenticated). Needs: `{ type, location, description }`
+- `POST /api/incidents/public`
+  - Creates a new incident (Unauthenticated/Public). Needs: `{ type, location, description }`
+  - Automatically handles anonymous user metadata and background triage.
 - `PATCH /api/incidents/:id/status`
   - Updates incident workflow status. Needs: `{ status }`
 - `DELETE /api/incidents/:id`

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import Sidebar from './components/Sidebar'
 import TopNav from './components/TopNav'
 import Login from './pages/Login'
@@ -7,10 +8,6 @@ import ProtectedRoute from './components/ProtectedRoute'
 import { clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import { Navigation, LayoutDashboard } from 'lucide-react'
-
-function cn(...inputs) {
-  return twMerge(clsx(inputs))
-}
 import CivilianSOS from './pages/CivilianSOS'
 import CivilianStatus from './pages/CivilianStatus'
 import ResponderIncidents from './pages/ResponderIncidents'
@@ -24,6 +21,10 @@ import TeamDashboard from './pages/TeamDashboard'
 import CivilianPortal from './pages/CivilianPortal'
 import PublicReport from './pages/PublicReport'
 import ErrorBoundary from './components/ErrorBoundary'
+
+function cn(...inputs) {
+  return twMerge(clsx(inputs))
+}
 
 import { getIncidents, closeIncident, updateIncidentStatus as apiUpdateStatus, WS_BASE, createIncident } from './services/api';
 

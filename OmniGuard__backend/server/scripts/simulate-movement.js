@@ -44,7 +44,8 @@ async function run() {
   }, env, logger);
   
   const assignedTeam = triageRes.result.assignedTeam;
-  console.log('Assigned Team by AI:', assignedTeam);
+  const modelUsed = triageRes.model;
+  console.log(`Assigned Team by ${modelUsed}:`, assignedTeam);
   
   // Update incident with triage
   await db.collection(COLLECTIONS.INCIDENTS).doc(incidentRef.id).update({

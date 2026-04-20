@@ -111,7 +111,7 @@ export default function Dashboard({ incidents, onUpdateStatus }) {
                            {inc.type} - {typeof inc.location === 'string' ? inc.location : (inc.location?.sector || inc.location?.address || 'Unknown Sector')}
                          </h4>
                          <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                           Incident detected at {inc.location?.coordinates ? `coordinates [${inc.location.coordinates.lat.toFixed(4)}, ${inc.location.coordinates.lng.toFixed(4)}]` : (typeof inc.location === 'string' ? inc.location : (inc.location?.address || 'Unknown Location'))}. Immediate response required.
+                           Incident detected at {inc.location?.coordinates?.lat && inc.location?.coordinates?.lng ? `coordinates [${inc.location.coordinates.lat.toFixed(4)}, ${inc.location.coordinates.lng.toFixed(4)}]` : (typeof inc.location === 'string' ? inc.location : (inc.location?.sector || inc.location?.address || 'Unknown Location'))}. Immediate response required.
                          </p>
                          
                          <div className="flex items-center gap-4 mt-6">

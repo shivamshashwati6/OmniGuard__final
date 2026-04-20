@@ -8,15 +8,17 @@ import { useNavigate } from 'react-router-dom';
 export default function ResponderIncidents({ user, incidents = [] }) {
   const navigate = useNavigate();
 
-  // Filter incidents for this responder's team
+  // Filter incidents for this responder's team with safety checks
   const displayIncidents = incidents
-    .filter(inc => inc.assignedTeam === (user.assignedTeam || user.responderTeam))
+    .filter(inc => inc && inc.assignedTeam === (user.assignedTeam || user.responderTeam))
     .map(inc => ({
-      id: inc.incidentNumber || inc.id,
-      type: inc.type,
+      id: inc.incidentNumber || inc.id || 'INC-UNKNOWN',
+      type: inc.type || 'Unknown Incident',
       status: inc.status || 'Dispatched',
       priority: ['Critical', 'High'].includes(inc.severity) ? 'Critical' : inc.severity === 'Medium' ? 'High' : 'Normal',
-      location: inc.lat ? `${inc.lat.toFixed(2)}, ${inc.lng.toFixed(2)}` : (typeof inc.location === 'string' ? inc.location : (inc.location?.sector || inc.location?.address || 'Unknown Location')),
+      location: (typeof inc.lat === 'number' && typeof inc.lng === 'number') 
+        ? `${inc.lat.toFixed(2)}, ${inc.lng.toFixed(2)}` 
+        : (typeof inc.location === 'string' ? inc.location : (inc.location?.sector || inc.location?.address || 'Unknown Location')),
       distance: inc.distance || '1.2km',
       ...inc
     }));

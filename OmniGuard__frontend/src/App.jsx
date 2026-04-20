@@ -137,19 +137,24 @@ function App() {
           // Normalize payload: extract from firestore-sync wrapper if present
           const isSync = !!rawPayload.incident;
           const incident = isSync ? rawPayload.incident : rawPayload;
+          
+          if (!incident) return;
+
           const incidentId = isSync ? incident.id : (rawPayload.incidentId || incident.id);
-          const assignedTeam = isSync ? incident.assignedTeam : (rawPayload.triage?.assignedTeam || incident.assignedTeam);
+          const assignedTeam = isSync ? incident.assignedTeam : (rawPayload.triage?.assignedTeam || incident.assignedTeam || rawPayload.assignedTeam);
 
           if (!incidentId) return;
 
           if (evtName === 'INCIDENT_CREATED') {
             setIncidents(prev => {
+              // Safety filter to remove any nulls that might have snuck in
+              const cleanPrev = prev.filter(Boolean);
               // Deduplication check
-              if (prev.some(inc => inc.id === incidentId)) return prev;
-              return [incident, ...prev];
+              if (cleanPrev.some(inc => inc.id === incidentId || inc.incidentId === incidentId)) return cleanPrev;
+              return [{ id: incidentId, ...incident }, ...cleanPrev];
             });
           } else if (evtName === 'INCIDENT_UPDATED') {
-            setIncidents(prev => prev.map(inc => inc.id === incidentId ? { ...inc, ...incident } : inc));
+            setIncidents(prev => prev.filter(Boolean).map(inc => inc.id === incidentId || inc.incidentId === incidentId ? { ...inc, ...incident } : inc));
           } else if (evtName === 'TRIAGE_COMPLETE') {
             const triage = rawPayload.triage || incident.triage || {};
             
@@ -174,7 +179,7 @@ function App() {
               return [{ id: incidentId, ...incident, ...triage, status: 'Triaged' }, ...prev];
             });
           } else if (evtName === 'INCIDENT_CLOSED' || evtName === 'INCIDENT_DELETED') {
-            setIncidents(prev => prev.filter(inc => inc.id !== incidentId));
+            setIncidents(prev => prev.filter(Boolean).filter(inc => inc.id !== incidentId && inc.incidentId !== incidentId));
           }
         } catch(err) {
           console.error('WS Parse Error', err);

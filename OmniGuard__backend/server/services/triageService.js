@@ -166,14 +166,16 @@ async function triageIncident(params, env, logger) {
   // Attempt Gemini triage with retries
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
+      const modelName = env.GEMINI_MODEL || 'gemini-1.5-flash';
       logger.info(`Gemini triage attempt ${attempt}/${MAX_RETRIES}`, {
         type,
         sector: location?.sector,
+        model: modelName
       });
 
       const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({
-        model: env.GEMINI_MODEL || 'gemini-1.5-flash',
+        model: modelName,
         generationConfig: { responseMimeType: 'application/json' },
       });
 
@@ -227,7 +229,7 @@ RESPOND WITH VALID JSON ONLY — no markdown, no explanation:
       };
     } catch (error) {
       logger.warn(`Gemini triage attempt ${attempt} failed`, {
-        error: error.message,
+        error: error,
         attempt,
         maxRetries: MAX_RETRIES,
       });

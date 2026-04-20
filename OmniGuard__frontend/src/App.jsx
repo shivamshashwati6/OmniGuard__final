@@ -246,7 +246,7 @@ function App() {
       <ErrorBoundary>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<CivilianPortal />} />
+            <Route path="/" element={<CivilianPortal onLogin={handleLogin} />} />
             <Route path="/report" element={<PublicReport />} />
             <Route path="/login" element={<Login onLogin={handleLogin} />} />
             <Route path="*" element={<Navigate to="/" replace />} />

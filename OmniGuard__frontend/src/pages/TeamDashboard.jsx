@@ -98,15 +98,23 @@ export default function TeamDashboard({ user, incidents, onUpdateStatus, userLoc
   };
 
   // Filter incidents for this team and only active ones
-  const teamIncidents = incidents.filter(inc => 
-    inc && 
-    (inc.assignedTeam === team || 
-     (Array.isArray(config.incidentFilter) 
-       ? config.incidentFilter.includes(inc.type) 
-       : inc.type === config.incidentFilter)) &&
-    inc.status !== 'Resolved' && inc.status !== 'resolved' &&
-    inc.status !== 'Closed' && inc.status !== 'closed'
-  );
+  const teamIncidents = incidents.filter(inc => {
+    if (!inc) return false;
+    
+    // Strict assignment check: If assignedTeam is set, it must match this team
+    // Otherwise, fallback to type filter for untriaged incidents
+    const isAssignedToThisTeam = inc.assignedTeam === team;
+    const isMatchingType = Array.isArray(config.incidentFilter) 
+      ? config.incidentFilter.includes(inc.type) 
+      : inc.type === config.incidentFilter;
+      
+    // If it's already assigned to another team, don't show it here even if the type matches
+    if (inc.assignedTeam && inc.assignedTeam !== team) return false;
+
+    return (isAssignedToThisTeam || isMatchingType) &&
+      inc.status !== 'Resolved' && inc.status !== 'resolved' &&
+      inc.status !== 'Closed' && inc.status !== 'closed';
+  });
 
   // Find nearest incident for routing
   const nearestIncident = React.useMemo(() => {
@@ -241,25 +249,29 @@ export default function TeamDashboard({ user, incidents, onUpdateStatus, userLoc
             </motion.div>
           )}
 
-          {/* Routing Instruction Overlay */}
-          {routingData && nearestIncident && ['En Route', 'On Scene', 'Dispatching'].includes(nearestIncident.status) && (
+          {/* Routing Instruction Overlay - Fixed over sidebar */}
+          {routingData && nearestIncident && ['En Route', 'Dispatching'].includes(nearestIncident.status) && (
             <motion.div 
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="absolute top-6 left-6 z-[1000] bg-white/95 backdrop-blur shadow-2xl rounded-3xl p-4 flex items-center gap-5 border border-slate-200 pr-10"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="fixed top-24 left-8 lg:left-72 z-[9999] bg-white/95 backdrop-blur shadow-2xl rounded-3xl p-4 flex items-center gap-5 border border-slate-200 pr-10 ring-1 ring-black/5"
             >
               <div className="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
-                <Navigation size={28} />
+                <Navigation size={28} className="animate-pulse" />
               </div>
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Routing Instruction</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Active Tactical Routing</p>
                 <h4 className="text-xl font-black text-slate-900 tracking-tighter">
-                  {routingData.dist}km — Proceed {routingData.bearing} toward {routingData.sector}
+                  {routingData.dist}km — {routingData.bearing} to {routingData.sector}
                 </h4>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
+                  <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Live Uplink Active</span>
+                </div>
               </div>
-              <div className="absolute top-4 right-6 flex flex-col items-center">
+              <div className="ml-4 pl-6 border-l border-slate-100 flex flex-col items-center">
                  <span className="text-2xl font-black text-slate-900 font-mono tracking-tighter leading-none">{routingData.eta} MIN</span>
-                 <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Est. Arrival</span>
+                 <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1 text-center">Est. Arrival</span>
               </div>
             </motion.div>
           )}

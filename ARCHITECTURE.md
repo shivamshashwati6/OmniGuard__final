@@ -48,13 +48,16 @@ The **Tactical Routing Engine** is a client-side specialized logic that optimize
 - **Security**: SHA-256 password hashing + JWT-based RBAC.
 - **Database**: Firebase Firestore (Real-time synchronization layer).
 
-## 4. Operational Deployment
+## 4. System Access & Test Credentials
+To verify role-specific functionality, use the following pre-seeded test accounts. Authenticate via the **Staff Login** section on the mission-critical portal.
 
-| Layer | Platform | Optimization |
-| :--- | :--- | :--- |
-| **Edge UI** | Vercel | Global CDN caching & ISR for static routes. |
-| **Core API** | Hugging Face Spaces | Containerized Docker environment with auto-scaling. |
-| **Data Layer** | Firebase | Multi-region replication for high-availability. |
+| Role | User ID (Email) | Access Code (Password) | Permissions |
+| :--- | :--- | :--- | :--- |
+| **Admin Strategist** | `coordinator@omniguard.io` | `omni2024!` | Full Command, Global Analytics, Team Management |
+| **Fire Team Lead** | `fire_commander@omniguard.io` | `resp2024!` | Fire Suppression Dashboard |
+| **Crime Team Lead** | `crime_chief@omniguard.io` | `resp2024!` | Security Task Force View |
+| **Disaster Lead** | `disaster_lead@omniguard.io` | `resp2024!` | Bio-Hazard / Disaster Command |
+| **Medic Unit M-1** | `medic1@omniguard.io` | `resp2024!` | Medical Response Dashboard |
 
 ---
 © 2026 OmniGuard Intelligence Systems

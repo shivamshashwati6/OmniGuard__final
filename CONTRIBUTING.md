@@ -27,5 +27,14 @@ Before submitting a PR, you MUST complete the following:
 - **Secret Management**: Never commit `.env` files, Firebase JSON keys, or Gemini API keys.
 - **Audit**: All changes affecting the authentication layer require a secondary senior review.
 
+## 4. Access & Test Credentials
+For developers and auditors, use the following accounts to verify system behavior:
+
+- **Admin Strategist**: `coordinator@omniguard.io` (pass: `omni2024!`)
+- **Fire Team Lead**: `fire_commander@omniguard.io` (pass: `resp2024!`)
+- **Crime Team Lead**: `crime_chief@omniguard.io` (pass: `resp2024!`)
+- **Disaster Lead**: `disaster_lead@omniguard.io` (pass: `resp2024!`)
+- **Civilian**: `civilian@omniguard.io` (pass: `civ2024!`)
+
 ---
 © 2026 OmniGuard Engineering Team • Secure • Reliable • Fast

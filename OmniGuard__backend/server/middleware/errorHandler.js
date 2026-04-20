@@ -52,8 +52,10 @@ function createErrorHandler(logger, nodeEnv) {
     // Build response
     const statusCode = err.statusCode || 500;
     const code = err.code || 'INTERNAL_ERROR';
-    const message = isDev || !isDev // ALWAYS show message for debugging
-        ? err.message 
+    const message = isOperational
+      ? err.message
+      : isDev
+        ? err.message // Show real message in dev only
         : 'An unexpected error occurred. Please try again later.';
 
     // Include details for operational errors, stack trace in dev for unexpected ones

@@ -1,10 +1,13 @@
+// For Android Emulator development, use 10.0.2.2 to reach the host machine
+const DEV_HOST = '10.0.2.2'; // Use 10.0.2.2 for Android Emulator, localhost for web
+
 export const API_BASE = import.meta.env.PROD 
   ? 'https://hrishikeshdutta-omniguard-api.hf.space/api' 
-  : 'http://localhost:3001/api';
+  : `http://${DEV_HOST}:3001/api`;
 
 export const WS_BASE = import.meta.env.PROD 
   ? 'wss://hrishikeshdutta-omniguard-api.hf.space/ws' 
-  : 'ws://localhost:3001/ws';
+  : `ws://${DEV_HOST}:3001/ws`;
 
 export async function login(email, password) {
   const res = await fetch(`${API_BASE}/auth/login`, {

@@ -1,4 +1,4 @@
-package com.stadiumflow.app;
+package com.omniguard.app;
 
 import com.getcapacitor.BridgeActivity;
 

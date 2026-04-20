@@ -23,7 +23,7 @@ const getSecurityConfig = (env) => {
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'", "'unsafe-inline'"],
-        connectSrc: ["'self'", 'ws:', 'wss:', 'https://hrishikeshdutta-omniguard-api.hf.space'],
+        connectSrc: ["'self'", 'ws:', 'wss:', 'https://*.hf.space', 'https://hrishikeshdutta-omniguard-api.hf.space'],
         imgSrc: ["'self'", 'data:', 'https:'],
         frameAncestors: ["'self'", 'https://huggingface.co', 'https://*.hf.space'],
       },

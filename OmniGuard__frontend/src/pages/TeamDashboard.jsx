@@ -136,6 +136,56 @@ export default function TeamDashboard({ user, incidents, onUpdateStatus }) {
         ))}
       </div>
 
+      {/* Map and Routing Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+         <div className="lg:col-span-2 h-[400px] bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl relative">
+            <TacticalMap incidents={teamIncidents} userLocation={userLocation} showRouting={true} />
+            
+            {/* Routing Instruction Overlay (Match User Image) */}
+            {userLocation && teamIncidents.length > 0 && (
+              <motion.div 
+                initial={{ opacity: 0, x: -50 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="absolute top-6 left-6 z-[1000] bg-white/95 backdrop-blur shadow-2xl rounded-3xl p-4 flex items-center gap-5 border border-slate-200 pr-10"
+              >
+                <div className="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                  <Navigation size={28} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Routing Instruction</p>
+                  <h4 className="text-xl font-black text-slate-900 tracking-tighter">350m - Turn Right at Beltola Chowk</h4>
+                </div>
+                <div className="absolute top-4 right-6 flex flex-col items-center">
+                   <span className="text-2xl font-black text-slate-900 font-mono tracking-tighter leading-none">4 MIN</span>
+                   <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Est. Arrival</span>
+                </div>
+              </motion.div>
+            )}
+         </div>
+
+         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-center">
+            <div className="flex items-center gap-3 mb-6">
+               <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white">
+                  <MapPin size={20} />
+               </div>
+               <div>
+                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Zone Intelligence</h4>
+                  <p className="text-[10px] text-slate-500 font-medium">Real-time perimeter analysis</p>
+               </div>
+            </div>
+            <div className="space-y-4">
+               <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Target Sector</p>
+                  <p className="text-sm font-black text-slate-900 font-mono">G-SECTOR ALPHA [26.14, 91.73]</p>
+               </div>
+               <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Optimal Route</p>
+                  <p className="text-sm font-black text-emerald-600 font-mono">NORTH-BY-NORTHEAST [ACTIVE]</p>
+               </div>
+            </div>
+         </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Incident Feed */}
         <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl overflow-hidden self-start shadow-sm">

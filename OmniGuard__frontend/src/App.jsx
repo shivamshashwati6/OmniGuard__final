@@ -6,6 +6,7 @@ import Login from './pages/Login'
 import ProtectedRoute from './components/ProtectedRoute'
 import { clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { Navigation, LayoutDashboard } from 'lucide-react'
 
 function cn(...inputs) {
   return twMerge(clsx(inputs))
@@ -33,6 +34,8 @@ function App() {
   })
   const [incidents, setIncidents] = useState([])
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024)
+  const [userLocation, setUserLocation] = useState(null);
+  const [gpsPermission, setGpsPermission] = useState('prompt'); // prompt, granted, denied
 
   const handleQuickSOS = async () => {
     if (!user?.token) return;
@@ -92,8 +95,49 @@ function App() {
     };
 
     window.addEventListener('unauthorized', handleUnauthorized);
+
+    // Initial GPS check
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then(result => {
+        setGpsPermission(result.state);
+        result.onchange = () => setGpsPermission(result.state);
+      });
+    }
+
     return () => window.removeEventListener('unauthorized', handleUnauthorized);
   }, []);
+
+  useEffect(() => {
+    if (gpsPermission === 'granted') {
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          setUserLocation({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude
+          });
+        },
+        (err) => console.error('GPS Watch Error', err),
+        { enableHighAccuracy: true }
+      );
+      return () => navigator.geolocation.clearWatch(watchId);
+    }
+  }, [gpsPermission]);
+
+  const requestGPS = () => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGpsPermission('granted');
+        setUserLocation({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        });
+      },
+      (err) => {
+        setGpsPermission('denied');
+        console.error('GPS Request Error', err);
+      }
+    );
+  };
 
   useEffect(() => {
     if (!user || !user.token || user.token === 'undefined') {
@@ -299,9 +343,36 @@ function App() {
 
                 {/* Role-Based Dashboard Root */}
                 <Route path="/" element={
-                  user.role === 'civilian' ? <CivilianSOS token={user.token} /> :
-                  user.role === 'responder' ? <TeamDashboard user={user} incidents={incidents} onUpdateStatus={updateIncidentStatus} /> :
-                  <CoordinatorDashboard incidents={incidents} onUpdateStatus={updateIncidentStatus} />
+                  <div className="relative">
+                    {user.role === 'responder' && gpsPermission === 'prompt' && (
+                      <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[2000] w-[90%] max-w-md">
+                        <motion.div 
+                          initial={{ opacity: 0, y: -20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-slate-900 border border-emerald-500/50 p-6 rounded-2xl shadow-2xl shadow-emerald-500/20 backdrop-blur-xl"
+                        >
+                          <div className="flex items-center gap-4 mb-4">
+                            <div className="p-3 bg-emerald-500/20 rounded-xl text-emerald-400">
+                              <Navigation size={24} />
+                            </div>
+                            <div>
+                              <h3 className="font-black text-white text-sm uppercase tracking-widest">Enable Tactical GPS</h3>
+                              <p className="text-[10px] text-slate-400 font-medium mt-0.5">Required for optimized routing to incident zones.</p>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={requestGPS}
+                            className="w-full py-3 bg-emerald-500 text-slate-900 font-black text-xs rounded-xl uppercase tracking-widest hover:bg-emerald-400 transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
+                          >
+                            Activate Uplink
+                          </button>
+                        </motion.div>
+                      </div>
+                    )}
+                    {user.role === 'civilian' ? <CivilianSOS token={user.token} /> :
+                    user.role === 'responder' ? <TeamDashboard user={user} incidents={incidents} onUpdateStatus={updateIncidentStatus} userLocation={userLocation} /> :
+                    <CoordinatorDashboard incidents={incidents} onUpdateStatus={updateIncidentStatus} />}
+                  </div>
                 } />
 
                 {/* Explicit Routes with Protection */}

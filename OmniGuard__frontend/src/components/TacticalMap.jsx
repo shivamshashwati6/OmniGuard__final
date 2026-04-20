@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -34,16 +34,29 @@ function ChangeView({ center, zoom }) {
   return null;
 }
 
-export default function TacticalMap({ incidents }) {
+export default function TacticalMap({ incidents, userLocation, showRouting }) {
   // Center of Assam/Guwahati
   const position = [26.1445, 91.7362];
+  const mapCenter = userLocation ? [userLocation.lat, userLocation.lng] : position;
+
+  const unitIcon = L.divIcon({
+    className: 'custom-unit-icon',
+    html: `
+      <div class="relative flex items-center justify-center">
+        <div class="absolute w-8 h-8 bg-blue-500 rounded-full animate-ping opacity-25"></div>
+        <div class="relative w-4 h-4 bg-blue-600 rounded-full border-2 border-white shadow-lg"></div>
+      </div>
+    `,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+  });
 
   return (
     <div className="h-full w-full rounded-2xl border border-slate-800 overflow-hidden tactical-glow relative z-0">
       <MapContainer 
-        center={position} 
-        zoom={12} 
-        scrollWheelZoom={false}
+        center={mapCenter} 
+        zoom={13} 
+        scrollWheelZoom={true}
         className="h-full w-full"
       >
         <TileLayer
@@ -51,26 +64,50 @@ export default function TacticalMap({ incidents }) {
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
         
-        {incidents.filter(inc => inc.location?.coordinates).map((inc) => (
-          <Marker 
-            key={inc.id} 
-            position={[inc.location.coordinates.lat, inc.location.coordinates.lng]} 
-            icon={createTacticalIcon(inc.status)}
-          >
-            <Popup className="tactical-popup">
-              <div className="bg-slate-900 text-white p-2 rounded-lg font-sans border border-slate-700">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">{inc.incidentNumber || inc.id}</p>
-                <p className="text-xs font-bold">{inc.type}</p>
-                <div className="mt-2 flex items-center gap-2">
-                  <span className={`w-1.5 h-1.5 rounded-full ${inc.status === 'detected' ? 'bg-red-500' : 'bg-amber-500'}`}></span>
-                  <span className="text-[9px] uppercase tracking-wider font-mono text-slate-400">{inc.status}</span>
-                </div>
-              </div>
-            </Popup>
+        {/* User Location */}
+        {userLocation && (
+          <Marker position={[userLocation.lat, userLocation.lng]} icon={unitIcon}>
+            <Popup>Your Current Position</Popup>
           </Marker>
+        )}
+
+        {incidents.filter(inc => inc.location?.coordinates).map((inc) => (
+          <React.Fragment key={inc.id}>
+            <Marker 
+              position={[inc.location.coordinates.lat, inc.location.coordinates.lng]} 
+              icon={createTacticalIcon(inc.status)}
+            >
+              <Popup className="tactical-popup">
+                <div className="bg-slate-900 text-white p-2 rounded-lg font-sans border border-slate-700">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">{inc.incidentNumber || inc.id}</p>
+                  <p className="text-xs font-bold">{inc.type}</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className={`w-1.5 h-1.5 rounded-full ${inc.status === 'detected' ? 'bg-red-500' : 'bg-amber-500'}`}></span>
+                    <span className="text-[9px] uppercase tracking-wider font-mono text-slate-400">{inc.status}</span>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+
+            {/* Routing Polyline (Visual simulation for now) */}
+            {showRouting && userLocation && (
+              <Polyline 
+                positions={[
+                  [userLocation.lat, userLocation.lng],
+                  [inc.location.coordinates.lat, inc.location.coordinates.lng]
+                ]}
+                pathOptions={{ 
+                  color: '#10b981', 
+                  weight: 4, 
+                  dashArray: '10, 10',
+                  opacity: 0.6
+                }}
+              />
+            )}
+          </React.Fragment>
         ))}
         
-        <ChangeView center={position} zoom={11} />
+        <ChangeView center={mapCenter} zoom={13} />
       </MapContainer>
 
       {/* Map Overlay Info */}

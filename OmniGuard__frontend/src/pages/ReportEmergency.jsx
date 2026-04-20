@@ -278,6 +278,5 @@ export default function ReportEmergency({ token, onSuccess }) {
         </p>
       )}
     </div>
-    </div>
   )
 }

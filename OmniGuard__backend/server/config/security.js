@@ -8,7 +8,10 @@ const getSecurityConfig = (env) => {
     'https://omniguard-web.vercel.app',
     'https://*.vercel.app',
     'https://huggingface.co',
-    'https://*.hf.space'
+    'https://*.hf.space',
+    'http://localhost',
+    'https://localhost',
+    'capacitor://localhost'
   ];
 
   if (env.FRONTEND_ORIGIN) {

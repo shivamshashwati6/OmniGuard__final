@@ -104,7 +104,10 @@ async function bootstrap() {
       if (isAllowed || (env.NODE_ENV !== 'production' && origin.startsWith('http://localhost:'))) {
         return callback(null, true);
       }
-      callback(new Error(`Not allowed by CORS: ${origin}`));
+      const corsError = new Error(`Not allowed by CORS: ${origin}`);
+      corsError.statusCode = 403;
+      corsError.isOperational = true; // Mark as operational for error handler
+      callback(corsError);
     },
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],

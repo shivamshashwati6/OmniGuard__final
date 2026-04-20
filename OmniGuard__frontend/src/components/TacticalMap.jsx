@@ -34,7 +34,7 @@ function ChangeView({ center, zoom }) {
   return null;
 }
 
-export default function TacticalMap({ incidents, userLocation, showRouting }) {
+export default function TacticalMap({ incidents, userLocation, targetIncident }) {
   // Center of Assam/Guwahati
   const position = [26.1445, 91.7362];
   const mapCenter = userLocation ? [userLocation.lat, userLocation.lng] : position;
@@ -71,40 +71,39 @@ export default function TacticalMap({ incidents, userLocation, showRouting }) {
           </Marker>
         )}
 
-        {incidents.filter(inc => inc.location?.coordinates).map((inc) => (
-          <React.Fragment key={inc.id}>
-            <Marker 
-              position={[inc.location.coordinates.lat, inc.location.coordinates.lng]} 
-              icon={createTacticalIcon(inc.status)}
-            >
-              <Popup className="tactical-popup">
-                <div className="bg-slate-900 text-white p-2 rounded-lg font-sans border border-slate-700">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">{inc.incidentNumber || inc.id}</p>
-                  <p className="text-xs font-bold">{inc.type}</p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className={`w-1.5 h-1.5 rounded-full ${inc.status === 'detected' ? 'bg-red-500' : 'bg-amber-500'}`}></span>
-                    <span className="text-[9px] uppercase tracking-wider font-mono text-slate-400">{inc.status}</span>
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
+        {/* Target Routing Polyline */}
+        {targetIncident?.location?.coordinates && userLocation && (
+          <Polyline 
+            positions={[
+              [userLocation.lat, userLocation.lng],
+              [targetIncident.location.coordinates.lat, targetIncident.location.coordinates.lng]
+            ]}
+            pathOptions={{ 
+              color: '#10b981', 
+              weight: 4, 
+              dashArray: '10, 10',
+              opacity: 0.6
+            }}
+          />
+        )}
 
-            {/* Routing Polyline (Visual simulation for now) */}
-            {showRouting && userLocation && (
-              <Polyline 
-                positions={[
-                  [userLocation.lat, userLocation.lng],
-                  [inc.location.coordinates.lat, inc.location.coordinates.lng]
-                ]}
-                pathOptions={{ 
-                  color: '#10b981', 
-                  weight: 4, 
-                  dashArray: '10, 10',
-                  opacity: 0.6
-                }}
-              />
-            )}
-          </React.Fragment>
+        {incidents.filter(inc => inc.location?.coordinates).map((inc) => (
+          <Marker 
+            key={inc.id}
+            position={[inc.location.coordinates.lat, inc.location.coordinates.lng]} 
+            icon={createTacticalIcon(inc.status)}
+          >
+            <Popup className="tactical-popup">
+              <div className="bg-slate-900 text-white p-2 rounded-lg font-sans border border-slate-700">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">{inc.incidentNumber || inc.id}</p>
+                <p className="text-xs font-bold">{inc.type}</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className={`w-1.5 h-1.5 rounded-full ${inc.status === 'detected' ? 'bg-red-500' : 'bg-amber-500'}`}></span>
+                  <span className="text-[9px] uppercase tracking-wider font-mono text-slate-400">{inc.status}</span>
+                </div>
+              </div>
+            </Popup>
+          </Marker>
         ))}
         
         <ChangeView center={mapCenter} zoom={13} />

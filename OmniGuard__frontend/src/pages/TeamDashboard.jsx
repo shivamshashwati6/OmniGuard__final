@@ -68,6 +68,35 @@ export default function TeamDashboard({ user, incidents, onUpdateStatus, userLoc
   const team = user.assignedTeam || user.team || 'Medical';
   const config = teamConfigs[team] || teamConfigs.Medical;
   
+  // Helper for distance calculation (Haversine)
+  const getDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in km
+  };
+
+  const getBearing = (lat1, lon1, lat2, lon2) => {
+    const y = Math.sin((lon2 - lon1) * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180);
+    const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
+              Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos((lon2 - lon1) * Math.PI / 180);
+    const brng = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    
+    if (brng >= 337.5 || brng < 22.5) return 'North';
+    if (brng >= 22.5 && brng < 67.5) return 'North-East';
+    if (brng >= 67.5 && brng < 112.5) return 'East';
+    if (brng >= 112.5 && brng < 157.5) return 'South-East';
+    if (brng >= 157.5 && brng < 202.5) return 'South';
+    if (brng >= 202.5 && brng < 247.5) return 'South-West';
+    if (brng >= 247.5 && brng < 292.5) return 'West';
+    return 'North-West';
+  };
+
   // Filter incidents for this team and only active ones
   const teamIncidents = incidents.filter(inc => 
     inc && 
@@ -75,6 +104,40 @@ export default function TeamDashboard({ user, incidents, onUpdateStatus, userLoc
     inc.status !== 'Resolved' && inc.status !== 'resolved' &&
     inc.status !== 'Closed' && inc.status !== 'closed'
   );
+
+  // Find nearest incident for routing
+  const nearestIncident = React.useMemo(() => {
+    if (!userLocation || teamIncidents.length === 0) return null;
+    return [...teamIncidents].sort((a, b) => {
+      if (!a.location?.coordinates || !b.location?.coordinates) return 0;
+      const distA = getDistance(userLocation.lat, userLocation.lng, a.location.coordinates.lat, a.location.coordinates.lng);
+      const distB = getDistance(userLocation.lat, userLocation.lng, b.location.coordinates.lat, b.location.coordinates.lng);
+      return distA - distB;
+    })[0];
+  }, [userLocation, teamIncidents]);
+
+  const routingData = React.useMemo(() => {
+    if (!nearestIncident || !userLocation) return null;
+    const dist = getDistance(
+      userLocation.lat, 
+      userLocation.lng, 
+      nearestIncident.location.coordinates.lat, 
+      nearestIncident.location.coordinates.lng
+    );
+    const bearing = getBearing(
+      userLocation.lat, 
+      userLocation.lng, 
+      nearestIncident.location.coordinates.lat, 
+      nearestIncident.location.coordinates.lng
+    );
+    const eta = Math.round(dist * 2.5) + 1; // 2.5 min per km + 1 min overhead
+    return { 
+      dist: dist.toFixed(1), 
+      bearing, 
+      eta,
+      sector: nearestIncident.location.sector || 'Sector Delta'
+    };
+  }, [nearestIncident, userLocation]);
 
   const activeCount = teamIncidents.length;
   const highPriority = teamIncidents.filter(i => i.severity === 'High' || i.severity === 'Critical').length;
@@ -85,6 +148,7 @@ export default function TeamDashboard({ user, incidents, onUpdateStatus, userLoc
     { label: 'Unit Readiness', value: '94%', icon: Truck, color: 'text-emerald-500', trend: 'Stable' },
     { label: 'Sector Coverage', value: '88%', icon: Navigation, color: 'text-blue-500', trend: 'Optimal' },
   ];
+
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -139,7 +203,7 @@ export default function TeamDashboard({ user, incidents, onUpdateStatus, userLoc
       {/* Map and Routing Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
          <div className="lg:col-span-2 h-[400px] bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl relative">
-          <TacticalMap incidents={teamIncidents} userLocation={userLocation} showRouting={true} />
+          <TacticalMap incidents={teamIncidents} userLocation={userLocation} targetIncident={nearestIncident} />
           
           {/* GPS Status / Enablement Prompt */}
           {!userLocation && (
@@ -166,8 +230,8 @@ export default function TeamDashboard({ user, incidents, onUpdateStatus, userLoc
             </motion.div>
           )}
 
-          {/* Routing Instruction Overlay (Match User Image) */}
-          {userLocation && teamIncidents.length > 0 && (
+          {/* Routing Instruction Overlay */}
+          {routingData && nearestIncident && ['En Route', 'On Scene', 'Dispatching'].includes(nearestIncident.status) && (
             <motion.div 
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
@@ -178,10 +242,12 @@ export default function TeamDashboard({ user, incidents, onUpdateStatus, userLoc
               </div>
               <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Routing Instruction</p>
-                <h4 className="text-xl font-black text-slate-900 tracking-tighter">350m - Turn Right at Beltola Chowk</h4>
+                <h4 className="text-xl font-black text-slate-900 tracking-tighter">
+                  {routingData.dist}km — Proceed {routingData.bearing} toward {routingData.sector}
+                </h4>
               </div>
               <div className="absolute top-4 right-6 flex flex-col items-center">
-                 <span className="text-2xl font-black text-slate-900 font-mono tracking-tighter leading-none">4 MIN</span>
+                 <span className="text-2xl font-black text-slate-900 font-mono tracking-tighter leading-none">{routingData.eta} MIN</span>
                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Est. Arrival</span>
               </div>
             </motion.div>
@@ -202,14 +268,19 @@ export default function TeamDashboard({ user, incidents, onUpdateStatus, userLoc
             <div className="space-y-4">
                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Target Sector</p>
-                  <p className="text-sm font-black text-slate-900 font-mono">G-SECTOR ALPHA [26.14, 91.73]</p>
+                  <p className="text-sm font-black text-slate-900 font-mono">
+                    {routingData ? `${routingData.sector} [${nearestIncident.location.coordinates.lat.toFixed(2)}, ${nearestIncident.location.coordinates.lng.toFixed(2)}]` : 'Waiting for assignment...'}
+                  </p>
                </div>
                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Optimal Route</p>
-                  <p className="text-sm font-black text-emerald-600 font-mono">NORTH-BY-NORTHEAST [ACTIVE]</p>
+                  <p className="text-sm font-black text-emerald-600 font-mono uppercase">
+                    {routingData ? `${routingData.bearing} [${routingData.dist} KM]` : 'Calculating...'}
+                  </p>
                </div>
             </div>
          </div>
+
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

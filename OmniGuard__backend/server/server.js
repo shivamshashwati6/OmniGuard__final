@@ -129,6 +129,8 @@ async function bootstrap() {
 
   app.use('/api/health', healthRoutes);
   app.use('/api/auth', createAuthRoutes(env));
+  // Public incident creation (no token required) — for civilian portal
+  app.post('/api/incidents/public', sanitizeMiddleware, incidentRoutes);
   app.use('/api/incidents', verifyToken, incidentRoutes);
   app.use('/api/responders', verifyToken, responderRoutes);
   app.use('/api/triage', verifyToken, triageRoutes);

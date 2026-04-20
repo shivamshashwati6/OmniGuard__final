@@ -24,16 +24,21 @@ export async function login(email, password) {
 }
 
 export async function createIncident(data, token) {
-  const res = await fetch(`${API_BASE}/incidents`, {
+  const isPublic = !token;
+  const url = isPublic ? `${API_BASE}/incidents/public` : `${API_BASE}/incidents`;
+  const headers = { 'Content-Type': 'application/json' };
+  
+  if (!isPublic) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(url, {
     method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}` 
-    },
+    headers,
     body: JSON.stringify(data)
   });
   
-  if (res.status === 401) {
+  if (res.status === 401 && !isPublic) {
     window.dispatchEvent(new CustomEvent('unauthorized'));
   }
 

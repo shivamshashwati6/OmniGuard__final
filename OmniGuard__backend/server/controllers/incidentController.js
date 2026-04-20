@@ -148,10 +148,14 @@ async function create(req, res, next) {
       },
       severity: preTriage.severity || 'Medium',
       status: 'Reported',
-      reportedBy: {
+      reportedBy: req.user ? {
         userId: req.user.uid || req.user.userId,
         role: req.user.role,
         name: req.user.name,
+      } : {
+        userId: 'anonymous_civilian',
+        role: 'civilian',
+        name: 'Anonymous',
       },
       assignedTeam: assignedTeam || preTriage.assignedTeam,
       triage: null,
@@ -167,7 +171,7 @@ async function create(req, res, next) {
       incidentId: incident.id,
       incidentNumber: incident.incidentNumber,
       type,
-      reportedBy: req.user.userId,
+      reportedBy: req.user ? req.user.userId : 'anonymous',
     });
 
     // Trigger async Gemini triage (non-blocking)

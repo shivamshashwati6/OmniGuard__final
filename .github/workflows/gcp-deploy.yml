@@ -14,7 +14,7 @@ env:
   PROJECT_ID: robust-backend-01
   REGION: us-central1
   SERVICE_NAME: omniguard-api
-  IMAGE_NAME: gcr.io/robust-backend-01/omniguard-api
+  IMAGE_NAME: us-central1-docker.pkg.dev/robust-backend-01/omniguard-repo/omniguard-api
 
 jobs:
   deploy:
@@ -34,7 +34,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Authorize Docker
-        run: gcloud auth configure-docker --quiet
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
 
       - name: Build and Push Docker Image
         run: |

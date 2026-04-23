@@ -85,7 +85,7 @@ export default function Sidebar({ user, onLogout, isOpen, setIsOpen }) {
                 "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden",
                 isActive 
                   ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]" 
-                  : "text-slate-400 hover:text-brand-primary hover:bg-brand-primary/5",
+                  : "text-brand-muted hover:text-brand-text hover:bg-brand-muted/5",
                 !isOpen && "lg:justify-center lg:px-0"
               )}
             >
@@ -123,7 +123,7 @@ export default function Sidebar({ user, onLogout, isOpen, setIsOpen }) {
         <div className="p-4 space-y-4">
           {/* System Health Card */}
           <div className={cn(
-            "bg-white/5 border border-white/10 p-4 rounded-xl transition-all duration-300",
+            "bg-brand-muted/5 border border-brand-muted/20 p-4 rounded-xl transition-all duration-300",
             !isOpen && "lg:p-2 lg:flex lg:flex-col lg:items-center"
           )}>
             <div className={cn(
@@ -156,7 +156,7 @@ export default function Sidebar({ user, onLogout, isOpen, setIsOpen }) {
           <button 
             onClick={onLogout}
             className={cn(
-              "flex items-center gap-3 px-4 py-3 w-full text-[#94A3B8] hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all duration-300 group",
+              "flex items-center gap-3 px-4 py-3 w-full text-brand-muted hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all duration-300 group",
               !isOpen && "lg:justify-center lg:px-0"
             )}
           >

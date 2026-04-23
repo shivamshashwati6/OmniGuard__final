@@ -23,12 +23,12 @@ export default function TopNav({ user, toggleSidebar, onQuickSOS, incidents = []
       <div className="flex items-center gap-4 md:gap-6">
         <button 
           onClick={toggleSidebar}
-          className="p-2 hover:bg-white/10 rounded-lg transition-colors text-brand-text"
+          className="p-2 hover:bg-brand-muted/10 rounded-lg transition-colors text-brand-text"
         >
           <Menu size={24} />
         </button>
 
-        <div className="hidden md:flex items-center gap-4 bg-white/5 border border-white/10 px-4 py-2 rounded-xl">
+        <div className="hidden md:flex items-center gap-4 bg-brand-muted/5 border border-brand-muted/20 px-4 py-2 rounded-xl">
           <Search size={16} className="text-brand-muted" />
           <input 
             type="text" 
@@ -64,7 +64,7 @@ export default function TopNav({ user, toggleSidebar, onQuickSOS, incidents = []
         <div className="relative">
           <button 
             onClick={() => setShowNotifications(!showNotifications)}
-            className={`relative p-2 transition-colors group rounded-xl ${showNotifications ? 'bg-white/10 text-brand-text' : 'text-brand-muted hover:text-brand-text'}`}
+            className={`relative p-2 transition-colors group rounded-xl ${showNotifications ? 'bg-brand-primary/10 text-brand-text' : 'text-brand-muted hover:text-brand-text hover:bg-brand-muted/10'}`}
           >
             <Bell size={20} />
             {notifications.length > 0 && (
@@ -85,7 +85,7 @@ export default function TopNav({ user, toggleSidebar, onQuickSOS, incidents = []
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   className="absolute right-0 mt-4 w-[calc(100vw-2rem)] md:w-80 glass-panel overflow-hidden z-50"
                 >
-                  <div className="p-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
+                  <div className="p-4 border-b border-brand-muted/10 bg-brand-muted/5 flex items-center justify-between">
                     <h3 className="font-bold text-brand-text text-sm">Notifications</h3>
                     <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full uppercase tracking-tighter">Live</span>
                   </div>
@@ -96,7 +96,7 @@ export default function TopNav({ user, toggleSidebar, onQuickSOS, incidents = []
                       </div>
                     ) : (
                       notifications.map(n => (
-                        <div key={n.id} className="p-4 hover:bg-white/5 transition-colors cursor-pointer border-b border-white/10 group">
+                        <div key={n.id} className="p-4 hover:bg-brand-muted/5 transition-colors cursor-pointer border-b border-brand-muted/10 group">
                           <div className="flex gap-3">
                             <div className={`p-2 rounded-lg h-fit ${n.type === 'alert' ? 'bg-rose-50 text-rose-500' : 'bg-blue-50 text-blue-500'}`}>
                               {n.type === 'alert' ? <AlertTriangle size={14} /> : <ShieldCheck size={14} />}
@@ -111,7 +111,7 @@ export default function TopNav({ user, toggleSidebar, onQuickSOS, incidents = []
                       ))
                     )}
                   </div>
-                  <button className="w-full p-4 text-[10px] font-bold text-brand-muted uppercase tracking-widest hover:bg-white/5 hover:text-brand-text transition-colors">
+                  <button className="w-full p-4 text-[10px] font-bold text-brand-muted uppercase tracking-widest hover:bg-brand-muted/5 hover:text-brand-text transition-colors">
                     Clear Tactical Feed
                   </button>
                 </motion.div>
@@ -125,7 +125,7 @@ export default function TopNav({ user, toggleSidebar, onQuickSOS, incidents = []
             <p className="text-xs font-bold text-brand-text uppercase tracking-wider">{user?.name || 'Operator ID'}</p>
             <p className="text-[9px] text-emerald-500 font-mono uppercase font-bold">{user?.role || 'Guest'} Access</p>
           </div>
-          <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:border-emerald-500 transition-colors overflow-hidden">
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-brand-muted/10 flex items-center justify-center border border-brand-muted/20 group-hover:border-emerald-500 transition-colors overflow-hidden">
              {user?.role === 'coordinator' ? <ShieldCheck className="text-emerald-500 w-5 md:w-6" /> : <User className="text-brand-muted w-5 md:w-6" />}
           </div>
         </div>

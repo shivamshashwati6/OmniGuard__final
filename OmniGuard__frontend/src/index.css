@@ -1,56 +1,72 @@
 @import "tailwindcss";
 
 :root {
-  --brand-bg-start: #1e1b4b;
-  --brand-bg-end: #020617;
-  --brand-card: rgba(13, 18, 31, 0.4);
+  /* Core Theme Tokens - Dark Mode (Default) */
+  --bg-start: #1e1b4b;
+  --bg-end: #020617;
+  --card-bg: rgba(13, 18, 31, 0.4);
+  --card-border: rgba(255, 255, 255, 0.1);
+  --border-main: rgba(255, 255, 255, 0.1);
+  --backdrop-bg: rgba(15, 23, 42, 0.4);
+  --text-main: #F8FAFC;
+  --text-muted: rgba(248, 250, 252, 0.7);
+  --glass-blur: 12px;
+  --glass-saturate: 180%;
+  --panel-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  
   --brand-primary: #3b82f6;
   --brand-accent: #10b981;
   --brand-danger: #ef4444;
   --brand-warning: #f59e0b;
   --brand-cyan: #06b6d4;
-  --brand-text: #F8FAFC;
-  --brand-text-muted: #94A3B8;
-  --brand-border: rgba(255, 255, 255, 0.1);
-  --glass-bg: rgba(255, 255, 255, 0.03);
 }
 
-[data-theme="light"] {
-  --brand-bg-start: #F8FAFC;
-  --brand-bg-end: #F1F5F9;
-  --brand-card: rgba(255, 255, 255, 0.8);
+.light {
+  /* Core Theme Tokens - Light Mode Overrides */
+  --bg-start: #f0f4ff;
+  --bg-end: #ffffff;
+  --card-bg: rgba(255, 255, 255, 0.7);
+  --card-border: rgba(0, 0, 0, 0.1);
+  --border-main: rgba(0, 0, 0, 0.08);
+  --backdrop-bg: rgba(255, 255, 255, 0.4);
+  --text-main: #0f172a;
+  --text-muted: rgba(15, 23, 42, 0.7);
+  --glass-blur: 16px;
+  --glass-saturate: 150%;
+  --panel-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+  
+  /* Slightly adjusted brand colors for light mode legibility if needed */
   --brand-primary: #2563eb;
   --brand-accent: #059669;
-  --brand-danger: #dc2626;
-  --brand-warning: #d97706;
-  --brand-cyan: #0891b2;
-  --brand-text: #0F172A;
-  --brand-text-muted: #475569;
-  --brand-border: rgba(0, 0, 0, 0.1);
-  --glass-bg: rgba(255, 255, 255, 0.7);
 }
 
 @theme {
-  --color-brand-bg-start: var(--brand-bg-start);
-  --color-brand-bg-end: var(--brand-bg-end);
-  --color-brand-card: var(--brand-card);
+  --color-brand-bg-start: var(--bg-start);
+  --color-brand-bg-end: var(--bg-end);
+  --color-brand-card: var(--card-bg);
   --color-brand-primary: var(--brand-primary);
   --color-brand-accent: var(--brand-accent);
   --color-brand-danger: var(--brand-danger);
   --color-brand-warning: var(--brand-warning);
   --color-brand-cyan: var(--brand-cyan);
-  --color-brand-text: var(--brand-text);
-  --color-brand-text-muted: var(--brand-text-muted);
+  
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  --color-border-main: var(--border-main);
+  --color-backdrop-bg: var(--backdrop-bg);
+  
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+  --font-sans: "Inter", "Outfit", system-ui, sans-serif;
 }
 
 @layer base {
   body {
     @apply font-sans antialiased selection:bg-brand-primary/30;
-    background: radial-gradient(circle at 50% 50%, var(--brand-bg-start) 0%, var(--brand-bg-end) 100%);
-    color: var(--brand-text);
+    background: radial-gradient(circle at 50% 50%, var(--bg-start) 0%, var(--bg-end) 100%);
+    color: var(--text-main);
     min-height: 100vh;
     overflow-x: hidden;
-    transition: background 0.3s ease, color 0.3s ease;
+    transition: background 0.5s ease, color 0.5s ease;
   }
 }
 
@@ -59,28 +75,26 @@
     background: 
       radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
       radial-gradient(circle at 80% 70%, rgba(6, 182, 212, 0.05) 0%, transparent 40%),
-      linear-gradient(180deg, #050a15 0%, #02040a 100%);
+      linear-gradient(180deg, var(--bg-start) 0%, var(--bg-end) 100%);
+
   }
 
   .glass-panel {
-    background: var(--glass-bg);
-    backdrop-filter: blur(12px) saturate(180%);
-    -webkit-backdrop-filter: blur(12px) saturate(180%);
-    border: 1px solid var(--brand-border);
+    background: var(--card-bg);
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    border: 1px solid var(--card-border);
     border-radius: 16px;
-    box-shadow: 0 8px 32px 0 rgba(0,0,0,0.1), 0 0 15px rgba(255, 255, 255, 0.02);
-    transition: background 0.3s ease, border 0.3s ease;
+    box-shadow: var(--panel-shadow), 0 0 15px rgba(255, 255, 255, 0.05);
+    transition: background 0.5s ease, border 0.5s ease, box-shadow 0.5s ease;
   }
 
   .glass-panel-heavy {
-    @apply backdrop-blur-[24px] rounded-xl shadow-2xl;
-    background: var(--glass-bg);
-    border: 1px solid var(--brand-border);
-    transition: background 0.3s ease, border 0.3s ease;
+    @apply backdrop-blur-[24px] bg-black/20 border border-white/10 rounded-xl shadow-2xl;
   }
 
   .civilian-bg {
-    background-color: #0B0F19;
+    background-color: var(--bg-end);
     position: relative;
     overflow: hidden;
   }
@@ -92,17 +106,17 @@
     width: 150vw;
     height: 150vh;
     transform: translate(-50%, -50%);
-    background: radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.08) 0%, transparent 60%);
+    background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--brand-accent), transparent 92%) 0%, transparent 60%);
     pointer-events: none;
     animation: glowPulse 10s infinite alternate ease-in-out;
     z-index: 0;
   }
 
   .emergency-btn {
-    background-color: rgba(25, 30, 45, 0.6);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    color: #ffffff;
+    background-color: var(--card-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    color: var(--text-main);
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     border-width: 1px;
     border-style: solid;
@@ -187,9 +201,9 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--border-main);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-brand-cyan);
+  background: var(--brand-cyan);
 }

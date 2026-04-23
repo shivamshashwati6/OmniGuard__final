@@ -73,7 +73,7 @@ export default function CivilianPortal({ onLogin }) {
             <Shield size={22} className="text-white" />
           </div>
           <div>
-            <span className="font-black text-brand-text text-lg tracking-tight">OMNIGUARD</span>
+            <span className="font-black text-slate-800 dark:text-white text-lg tracking-tight">OMNIGUARD</span>
             <p className="text-[9px] font-mono text-emerald-600 uppercase tracking-widest leading-none">Public Safety Network</p>
           </div>
         </div>
@@ -81,7 +81,7 @@ export default function CivilianPortal({ onLogin }) {
           <ThemeToggle />
           <button
             onClick={() => setShowStaffLogin(!showStaffLogin)}
-            className="flex items-center gap-2 text-xs font-bold text-brand-muted hover:text-brand-text transition-colors uppercase tracking-wider"
+            className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-white hover:text-brand-primary transition-colors uppercase tracking-wider"
           >
             <Lock size={14} />
             Staff Login
@@ -144,11 +144,11 @@ export default function CivilianPortal({ onLogin }) {
             <div className="w-2 h-2 bg-[#10b981] rounded-full radar-pulse" />
             Emergency Response Network — Active
           </div>
-          <h1 className="text-5xl md:text-6xl font-black text-brand-text tracking-tight mb-6 leading-none relative z-10">
+          <h1 className="text-5xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tight mb-6 leading-none relative z-10">
             Report an Emergency.<br />
             <span className="text-emerald-500">Get Help Fast.</span>
           </h1>
-          <p className="text-xl text-brand-muted font-medium max-w-2xl mx-auto leading-relaxed relative z-10">
+          <p className="text-xl text-slate-600 dark:text-slate-300 font-medium max-w-2xl mx-auto leading-relaxed relative z-10">
             OmniGuard connects you directly to the nearest tactical response unit. Your report is automatically triaged and dispatched in seconds.
           </p>
         </motion.div>
@@ -167,8 +167,8 @@ export default function CivilianPortal({ onLogin }) {
               className={`emergency-btn ${e.color} p-4 md:p-5 rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 shadow-lg`}
             >
               <Phone className="w-5 h-5 md:w-6 md:h-6" fill="currentColor" />
-              <span className="font-black text-xl md:text-2xl">{e.number}</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">{e.label}</span>
+              <span className="font-extrabold text-xl md:text-2xl text-slate-900 dark:text-white">{e.number}</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest opacity-80 text-slate-900 dark:text-white">{e.label}</span>
             </a>
           ))}
         </motion.div>
@@ -183,10 +183,10 @@ export default function CivilianPortal({ onLogin }) {
           <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-rose-500 rounded-3xl shadow-2xl shadow-rose-500/30 mb-6">
             <ShieldAlert className="text-white w-8 h-8 md:w-10 md:h-10" />
           </div>
-          <h2 className="text-2xl md:text-3xl font-black text-brand-text tracking-tight mb-4">
+          <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-4">
             Report an Emergency Now
           </h2>
-          <p className="text-brand-muted text-sm md:text-base font-medium max-w-lg mx-auto mb-8 leading-relaxed">
+          <p className="text-slate-600 dark:text-slate-300 text-sm md:text-base font-medium max-w-lg mx-auto mb-8 leading-relaxed">
             Use our guided 3-step form to report fire, medical emergencies, crimes, or natural disasters. No login required.
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-10">
@@ -212,7 +212,7 @@ export default function CivilianPortal({ onLogin }) {
         </motion.div>
 
         {/* Info Footer */}
-        <div className="flex flex-col md:flex-row items-center justify-center gap-8 text-brand-muted text-xs font-bold uppercase tracking-widest">
+        <div className="flex flex-col md:flex-row items-center justify-center gap-8 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest">
           <div className="flex items-center gap-2">
             <Radio size={14} className="text-emerald-500" />
             <span>AI-Powered Triage</span>

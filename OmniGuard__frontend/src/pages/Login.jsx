@@ -162,7 +162,8 @@ export default function Login({ onLogin }) {
             </div>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-slate-800 flex flex-col items-center gap-4">
+          <div className="mt-8 pt-6 border-t border-brand-muted/20 flex flex-col items-center gap-4">
+
             <p className="text-[10px] text-slate-600 font-mono text-center">
               SYSTEM ACCESS IS MONITORED. UNAUTHORIZED ATTEMPTS WILL BE TRACED.
             </p>
@@ -174,7 +175,6 @@ export default function Login({ onLogin }) {
               <span>JWT_Auth</span>
             </div>
           </div>
-        </div>
       </motion.div>
     </div>
   );

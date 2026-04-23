@@ -59,6 +59,7 @@ const TacticalDashboard = () => {
           </div>
         </div>
 
+        <div className="flex items-center gap-10">
           <ThemeToggle />
           <div className="flex flex-col items-end">
             <span className="text-[9px] text-brand-muted uppercase tracking-[0.2em]">Chronos Protocol</span>
@@ -75,6 +76,7 @@ const TacticalDashboard = () => {
             <User size={24} className="text-brand-cyan" />
           </motion.div>
         </div>
+
       </header>
 
       <div className="flex-1 flex gap-4 overflow-hidden">

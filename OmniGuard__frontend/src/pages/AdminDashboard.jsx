@@ -188,6 +188,8 @@ export default function AdminDashboard({ user, incidents = [], onUpdateStatus })
                           </div>
                         </div>
                         <div className="flex flex-row md:flex-col justify-end gap-3">
+                          <button 
+                            onClick={() => onUpdateStatus(inc.id, 'Resolved')}
                             className="px-6 py-3 bg-emerald-500 text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-all active:scale-95 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
                           >
                             Close File

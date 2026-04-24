@@ -110,6 +110,7 @@ function App() {
       }, user.token);
       
       alert('🚨 QUICK SOS DISPATCHED! Tactical units notified.');
+
     } catch (err) {
       console.error('Quick SOS failed', err);
       alert('Failed to send Quick SOS: ' + err.message);
@@ -117,18 +118,25 @@ function App() {
   }
 
   useEffect(() => {
+    let lastWidth = window.innerWidth;
     const handleResize = () => {
-      if (window.innerWidth < 1024) {
-        setIsSidebarOpen(false)
-      } else {
-        setIsSidebarOpen(true)
+      const currentWidth = window.innerWidth;
+      // Only auto-toggle if we cross the 1024px breakpoint to avoid overriding manual user toggles
+      if (lastWidth >= 1024 && currentWidth < 1024) {
+        setIsSidebarOpen(false);
+      } else if (lastWidth < 1024 && currentWidth >= 1024) {
+        setIsSidebarOpen(true);
       }
-    }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+      lastWidth = currentWidth;
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
+    // Only trigger redraw on desktop where sidebar toggle shifts the layout
+    if (window.innerWidth < 1024) return;
+    
     const timer = setTimeout(() => {
       window.dispatchEvent(new Event('resize'));
     }, 350); 

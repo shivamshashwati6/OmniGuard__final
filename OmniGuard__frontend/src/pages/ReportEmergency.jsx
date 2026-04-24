@@ -42,14 +42,14 @@ export default function ReportEmergency({ token, onSuccess }) {
   }, [step, onSuccess]);
 
   return (
-    <div className="max-w-2xl mx-auto flex flex-col h-full bg-slate-50 md:p-4 p-2">
+    <div className="max-w-2xl mx-auto flex flex-col h-full bg-transparent md:p-4 p-2">
       {/* Progress Bar */}
-      <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-sm border border-slate-200 mb-4 md:mb-6">
+      <div className="glass-panel p-4 md:p-6 !rounded-2xl md:!rounded-3xl shadow-sm mb-4 md:mb-6">
         <div className="flex justify-between items-center mb-3 md:mb-4">
-          <h2 className="text-lg md:text-xl font-bold text-slate-900">Report Emergency</h2>
-          <span className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest">Step {step} of {totalSteps}</span>
+          <h2 className="text-lg md:text-xl font-bold text-brand-text">Report Emergency</h2>
+          <span className="text-[10px] md:text-xs font-bold text-brand-muted uppercase tracking-widest">Step {step} of {totalSteps}</span>
         </div>
-        <div className="h-1.5 md:h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+        <div className="h-1.5 md:h-2 w-full bg-brand-muted/10 rounded-full overflow-hidden">
           <motion.div 
             className="h-full bg-emerald-500"
             initial={{ width: 0 }}
@@ -70,12 +70,12 @@ export default function ReportEmergency({ token, onSuccess }) {
               className="space-y-4 md:space-y-6"
             >
               <div className="text-center md:text-left mb-6 md:mb-8">
-                <h3 className="text-xl md:text-2xl font-bold text-slate-800">What is the incident?</h3>
-                <p className="text-slate-500 mt-1 md:mt-2 text-base md:text-lg">Select the type of emergency you are witnessing.</p>
+                <h3 className="text-xl md:text-2xl font-bold text-brand-text">What is the incident?</h3>
+                <p className="text-brand-muted mt-1 md:mt-2 text-base md:text-lg">Select the type of emergency you are witnessing.</p>
               </div>
               <div className="grid grid-cols-2 gap-3 md:gap-4">
                 {incidentTypes.map((item) => (
-                  <button
+                    <button
                     key={item.id}
                     onClick={() => {
                       setFormData({ ...formData, type: item.id })
@@ -83,14 +83,14 @@ export default function ReportEmergency({ token, onSuccess }) {
                     }}
                     className={`flex flex-col items-center justify-center p-6 md:p-8 rounded-2xl md:rounded-3xl border-2 transition-all active:scale-95 ${
                       formData.type === item.id 
-                        ? 'border-emerald-500 bg-emerald-50 shadow-lg shadow-emerald-500/10' 
-                        : 'border-white bg-white hover:border-slate-200'
+                        ? 'border-emerald-500 bg-emerald-500/10 shadow-lg shadow-emerald-500/10' 
+                        : 'border-transparent bg-brand-muted/5 hover:border-brand-muted/20'
                     }`}
                   >
                     <div className={`p-4 md:p-5 rounded-xl md:rounded-2xl mb-3 md:mb-4 ${item.color}`}>
                       <item.icon size={28} md:size={36} />
                     </div>
-                    <span className="font-bold text-slate-700 text-base md:text-lg">{item.label}</span>
+                    <span className="font-bold text-brand-text text-base md:text-lg">{item.label}</span>
                   </button>
                 ))}
               </div>
@@ -106,11 +106,11 @@ export default function ReportEmergency({ token, onSuccess }) {
               className="space-y-4 md:space-y-6"
             >
               <div className="mb-6 md:mb-8">
-                <h3 className="text-xl md:text-2xl font-bold text-slate-800">Where is it happening?</h3>
-                <p className="text-slate-500 mt-1 md:mt-2 text-sm md:text-base">Enter the address or use your device's GPS.</p>
+                <h3 className="text-xl md:text-2xl font-bold text-brand-text">Where is it happening?</h3>
+                <p className="text-brand-muted mt-1 md:mt-2 text-sm md:text-base">Enter the address or use your device's GPS.</p>
               </div>
               
-              <div className="bg-white p-4 rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm">
+              <div className="glass-panel p-4 !rounded-2xl md:!rounded-3xl shadow-sm">
                 <button 
                   type="button"
                   onClick={() => {
@@ -145,15 +145,15 @@ export default function ReportEmergency({ token, onSuccess }) {
                 </button>
                 
                 <div className="relative my-6 md:my-8 text-center">
-                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-                  <span className="relative px-4 bg-white text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest">Or enter manually</span>
+                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-brand-muted/10"></div></div>
+                  <span className="relative px-4 bg-brand-bg-start text-[10px] md:text-xs font-bold text-brand-muted uppercase tracking-widest">Or enter manually</span>
                 </div>
 
                 <div className="relative">
-                  <MapPin className="absolute left-4 top-4 text-slate-400" size={18} md:size={20} />
+                  <MapPin className="absolute left-4 top-4 text-brand-muted" size={18} md:size={20} />
                   <textarea 
                     rows={3}
-                    className="w-full pl-10 md:pl-12 pr-4 py-3 md:py-4 bg-slate-50 border-none rounded-xl md:rounded-2xl focus:ring-2 focus:ring-emerald-500/50 outline-none text-base md:text-lg font-medium resize-none"
+                    className="w-full pl-10 md:pl-12 pr-4 py-3 md:py-4 bg-brand-muted/10 border-none rounded-xl md:rounded-2xl focus:ring-2 focus:ring-emerald-500/50 outline-none text-brand-text text-base md:text-lg font-medium resize-none placeholder:text-brand-muted/40"
                     placeholder="Enter street, district, or landmarks..."
                     value={typeof formData.location === 'string' ? formData.location : formData.location?.address || ''}
                     onChange={(e) => setFormData({...formData, location: e.target.value})}
@@ -162,7 +162,7 @@ export default function ReportEmergency({ token, onSuccess }) {
               </div>
 
               <div className="flex gap-3 md:gap-4 pt-2 md:pt-4">
-                <button onClick={handleBack} className="p-4 md:p-5 bg-white border border-slate-200 rounded-xl md:rounded-2xl text-slate-600 active:scale-95 transition-all">
+                <button onClick={handleBack} className="p-4 md:p-5 bg-brand-muted/10 border border-brand-muted/20 rounded-xl md:rounded-2xl text-brand-text active:scale-95 transition-all">
                   <ChevronLeft size={20} md:size={24} />
                 </button>
                 <button 
@@ -186,23 +186,23 @@ export default function ReportEmergency({ token, onSuccess }) {
               className="space-y-4 md:space-y-6"
             >
               <div className="mb-6 md:mb-8">
-                <h3 className="text-xl md:text-2xl font-bold text-slate-800">Additional Details</h3>
-                <p className="text-slate-500 mt-1 md:mt-2 text-sm md:text-base">Provide any extra info or photos to help responders.</p>
+                <h3 className="text-xl md:text-2xl font-bold text-brand-text">Additional Details</h3>
+                <p className="text-brand-muted mt-1 md:mt-2 text-sm md:text-base">Provide any extra info or photos to help responders.</p>
               </div>
 
               <div className="space-y-3 md:space-y-4">
-                <div className="bg-white p-6 md:p-8 rounded-2xl md:rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-emerald-300 transition-colors cursor-pointer active:scale-95 group shadow-sm">
-                  <div className="p-3 md:p-4 bg-slate-50 rounded-full mb-2 md:mb-3 group-hover:bg-emerald-50 transition-colors">
+                <div className="bg-brand-muted/5 p-6 md:p-8 rounded-2xl md:rounded-3xl border-2 border-dashed border-brand-muted/20 flex flex-col items-center justify-center text-brand-muted hover:border-emerald-500/40 transition-colors cursor-pointer active:scale-95 group shadow-sm">
+                  <div className="p-3 md:p-4 bg-brand-muted/10 rounded-full mb-2 md:mb-3 group-hover:bg-emerald-500/10 transition-colors">
                     <Camera size={24} md:size={32} className="group-hover:text-emerald-500" />
                   </div>
                   <span className="font-bold text-sm md:text-base">Add Photos (Optional)</span>
                   <span className="text-[9px] md:text-[10px] uppercase tracking-wider mt-1">Tap to capture</span>
                 </div>
 
-                <div className="bg-white p-2 rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm">
+                <div className="glass-panel p-2 !rounded-2xl md:!rounded-3xl">
                   <textarea 
                     rows={4}
-                    className="w-full p-3 md:p-4 bg-transparent border-none focus:ring-0 outline-none text-base md:text-lg font-medium resize-none"
+                    className="w-full p-3 md:p-4 bg-transparent border-none focus:ring-0 outline-none text-brand-text text-base md:text-lg font-medium resize-none placeholder:text-brand-muted/40"
                     placeholder="Describe the situation..."
                     value={formData.description}
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
@@ -211,7 +211,7 @@ export default function ReportEmergency({ token, onSuccess }) {
               </div>
 
               <div className="grid grid-cols-2 gap-3 md:gap-4 pt-4 md:pt-6">
-                <button onClick={handleBack} className="py-4 md:py-5 bg-white border border-slate-200 rounded-xl md:rounded-2xl text-slate-600 font-bold active:scale-95 transition-all text-sm md:text-base">
+                <button onClick={handleBack} className="py-4 md:py-5 bg-brand-muted/10 border border-brand-muted/20 rounded-xl md:rounded-2xl text-brand-text font-bold active:scale-95 transition-all text-sm md:text-base">
                   Back
                 </button>
                 <button 
@@ -246,24 +246,24 @@ export default function ReportEmergency({ token, onSuccess }) {
               key="step4"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-white p-8 md:p-12 rounded-[2rem] md:rounded-[3rem] shadow-xl border border-slate-100 flex flex-col items-center text-center space-y-4 md:space-y-6"
+              className="glass-panel p-8 md:p-12 !rounded-[2rem] md:!rounded-[3rem] shadow-xl flex flex-col items-center text-center space-y-4 md:space-y-6"
             >
               <div className="w-16 h-16 md:w-24 md:h-24 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/40">
                 <CheckCircle2 size={32} md:size={48} />
               </div>
               <div>
-                <h3 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight">SOS DISPATCHED</h3>
-                <p className="text-slate-500 mt-2 md:mt-3 text-sm md:text-lg font-medium leading-relaxed max-w-xs mx-auto">
+                <h3 className="text-2xl md:text-3xl font-black text-brand-text leading-tight">SOS DISPATCHED</h3>
+                <p className="text-brand-muted mt-2 md:mt-3 text-sm md:text-lg font-medium leading-relaxed max-w-xs mx-auto">
                   Help is on the way. Responders have been notified of your report.
                 </p>
               </div>
-              <div className="w-full bg-slate-50 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100">
-                <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Estimated Arrival</p>
-                <p className="text-xl md:text-2xl font-bold text-slate-900 font-mono tracking-tight">4 - 7 MINUTES</p>
+              <div className="w-full bg-brand-muted/10 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-brand-muted/20">
+                <p className="text-[10px] md:text-xs font-bold text-brand-muted uppercase tracking-widest mb-1">Estimated Arrival</p>
+                <p className="text-xl md:text-2xl font-bold text-brand-text font-mono tracking-tight">4 - 7 MINUTES</p>
               </div>
               <button 
                 onClick={() => setStep(1)}
-                className="text-slate-400 font-bold hover:text-slate-600 underline text-xs md:text-sm"
+                className="text-brand-muted/60 font-bold hover:text-brand-text underline text-xs md:text-sm"
               >
                 Return to Dashboard
               </button>
@@ -273,7 +273,7 @@ export default function ReportEmergency({ token, onSuccess }) {
       </div>
 
       {step < 4 && (
-        <p className="p-6 md:p-8 text-center text-[10px] md:text-xs text-slate-400 italic">
+        <p className="p-6 md:p-8 text-center text-[10px] md:text-xs text-brand-muted italic">
           Your precise location and identity will be shared with emergency services.
         </p>
       )}
